@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Копируем файлы для сборки проекта
 COPY gradle/ gradle/
-COPY build.gradle settings.gradle gradlew ./
+COPY build.gradle.kts settings.gradle.kts gradlew ./
 COPY src/ src/
 
 # Предоставляем права на выполнение gradlew
