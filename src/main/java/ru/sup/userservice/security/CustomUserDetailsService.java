@@ -1,6 +1,7 @@
 package ru.sup.userservice.security;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -15,28 +16,17 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
 
-    private final UserRepository userRepository;
+    private final UserRepository userRepository; // твой репо
+
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(username)
+        User u = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-
-        return new User(
-                user.getUsername(),
-                user.getPassword()
-        );
-    }
-
-    public void saveUser(String username, String encodedPassword) {
-        if (userRepository.findByUsername(username).isPresent()) {
-            throw new IllegalArgumentException("Username already taken");
-        }
-        User newUser = new User();
-
-        newUser.setUsername(username);
-        newUser.setPassword(encodedPassword);
-
-        userRepository.save(newUser);
+        return org.springframework.security.core.userdetails.User
+                .withUsername(u.getUsername())
+                .password(u.getPassword())
+                .accountExpired(false).accountLocked(false).credentialsExpired(false).disabled(false)
+                .build();
     }
 }

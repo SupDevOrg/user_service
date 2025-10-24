@@ -1,6 +1,7 @@
 package ru.sup.userservice.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -14,54 +15,59 @@ import ru.sup.userservice.dto.LoginRequest;
 import ru.sup.userservice.dto.RefreshRequest;
 import ru.sup.userservice.dto.RegisterRequest;
 import ru.sup.userservice.entity.User;
+import ru.sup.userservice.repository.UserRepository;
+import ru.sup.userservice.security.CustomUserDetailsService;
+import ru.sup.userservice.security.JwtUtil;
 
 
 //TODO make this
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserService {
 
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
     private final UserDetailsService userDetailsService;
     private final PasswordEncoder passwordEncoder;
-    private final JwtUtils jwtUtils;
     private final AuthenticationManager authManager;
+    private final UserRepository userRepository;
+    private final JwtUtil jwtUtil;
 
     public AuthResponse register(RegisterRequest request) {
         try {
-            if (!(userDetailsService instanceof CustomUserDetailsService)) {
-                logger.error("userDetailsService does not support user registration");
-                return null;
-            }
-            if (request.getRole().equals(User.Role.USER)){
-                ((CustomUserDetailsService) userDetailsService).saveUser(
-                        request.getUsername(),
-                        passwordEncoder.encode(request.getPassword()),
-                        request.getRole());
-            }
-            if (request.getRole().equals(User.Role.ADMIN)){
-                ((CustomUserDetailsService) userDetailsService).saveUser(
-                        request.getUsername(),
-                        passwordEncoder.encode(request.getPassword()),
-                        request.getRole()
-                );
+            // Проверяем, нет ли уже пользователя с таким логином
+            if (userRepository.findByUsername(request.getUsername()).isPresent()) {
+                log.error("Пользователь с именем '{}' уже существует", request.getUsername());
+                throw new IllegalArgumentException("Пользователь уже существует");
             }
 
-            UserDetails user = userDetailsService.loadUserByUsername(request.getUsername());
+            // Создаём нового пользователя
+            User user = new User();
+            user.setUsername(request.getUsername());
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+            userRepository.save(user);
 
-            String accessToken = jwtUtils.generateAccessToken(user);
-            String refreshToken = jwtUtils.generateRefreshToken(user);
+            // Создаём UserDetails (для совместимости с JwtUtil)
+            UserDetails userDetails = org.springframework.security.core.userdetails.User
+                    .withUsername(user.getUsername())
+                    .password(user.getPassword())
+                    .authorities("USER") // пока что одна базовая роль
+                    .build();
 
+            // Генерируем токены
+            String accessToken = jwtUtil.generateAccessToken(userDetails);
+            String refreshToken = jwtUtil.generateRefreshToken(userDetails);
+
+            // Возвращаем ответ
             AuthResponse response = new AuthResponse();
             response.setAccessToken(accessToken);
             response.setRefreshToken(refreshToken);
-
             return response;
 
         } catch (Exception e) {
-            logger.error("Error during registration: ", e);
-            return null;
+            log.error("Ошибка при регистрации пользователя", e);
+            throw new RuntimeException("Ошибка регистрации", e);
         }
     }
 
@@ -76,8 +82,8 @@ public class UserService {
 
             UserDetails user = userDetailsService.loadUserByUsername(request.getUsername());
 
-            String accessToken = jwtUtils.generateAccessToken(user);
-            String refreshToken = jwtUtils.generateRefreshToken(user);
+            String accessToken = jwtUtil.generateAccessToken(user);
+            String refreshToken = jwtUtil.generateRefreshToken(user);
 
             AuthResponse response = new AuthResponse();
             response.setAccessToken(accessToken);
@@ -94,13 +100,13 @@ public class UserService {
     public AuthResponse refresh(RefreshRequest request) {
         try {
             String refreshToken = request.getRefreshToken();
-            String username = jwtUtils.extractUsername(refreshToken);
+            String username = jwtUtil.extractUsername(refreshToken);
 
             UserDetails user = userDetailsService.loadUserByUsername(username);
 
-            if (jwtUtils.isTokenValid(refreshToken, user)) {
-                String newAccessToken = jwtUtils.generateAccessToken(user);
-                String newRefreshToken = jwtUtils.generateRefreshToken(user);
+            if (jwtUtil.validateToken(refreshToken, user)) {
+                String newAccessToken = jwtUtil.generateAccessToken(user);
+                String newRefreshToken = jwtUtil.generateRefreshToken(user);
 
                 AuthResponse response = new AuthResponse();
                 response.setAccessToken(newAccessToken);

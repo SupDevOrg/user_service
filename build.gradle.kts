@@ -34,10 +34,13 @@ dependencies {
     implementation("io.jsonwebtoken:jjwt-api:0.12.6")
 
     // https://mvnrepository.com/artifact/io.jsonwebtoken/jjwt-impl
-    runtimeOnly("io.jsonwebtoken:jjwt-impl:0.13.0")
+    runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
 
     // https://mvnrepository.com/artifact/io.jsonwebtoken/jjwt-jackson
-    runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.13.0")
+    runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
+
+    // Gradle
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
 
     testImplementation("org.springframework.security:spring-security-test")
     compileOnly("org.projectlombok:lombok")

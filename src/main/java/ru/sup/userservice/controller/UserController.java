@@ -1,10 +1,11 @@
 package ru.sup.userservice.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.apache.tomcat.websocket.AuthenticationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,6 +20,7 @@ import ru.sup.userservice.service.UserService;
 @RestController
 @RequestMapping("api/vi/user")
 @RequiredArgsConstructor
+@Tag(name = "User Controller", description = "Регистрация, логин и обновление токенов пользователей")
 public class UserController {
 
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
@@ -26,6 +28,7 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping("/register")
+    @Operation(summary = "Регистрация нового пользователя")
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
         try {
             logger.info("Register user with username: {}", request.getUsername());
@@ -43,6 +46,7 @@ public class UserController {
     }
 
     @PostMapping("/login")
+    @Operation(summary = "Логин пользователя")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         try {
             logger.info("Login user with username: {}", request.getUsername());
@@ -60,6 +64,7 @@ public class UserController {
     }
 
     @PostMapping("/refresh")
+    @Operation(summary = "Обновление токена")
     public ResponseEntity<?> refresh(@RequestBody RefreshRequest request) {
         try {
             AuthResponse response = userService.refresh(request);

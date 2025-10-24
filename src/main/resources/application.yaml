@@ -7,3 +7,8 @@ spring:
     password: admin123
     driver-class-name: org.postgresql.Driver
 
+jwt:
+  secret: ${JWT_SECRET:change_me_in_prod}
+  access-expiration-ms: 900000   # 15 min
+  refresh-expiration-ms: 2592000000  # 30 days
+
