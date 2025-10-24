@@ -1,6 +1,7 @@
 package ru.sup.userservice.security;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -18,6 +19,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableMethodSecurity
 @RequiredArgsConstructor
+@Slf4j
 public class SecurityConfig {
 
     private final JwtUtil jwtUtil;
@@ -25,6 +27,7 @@ public class SecurityConfig {
     private final JwtTokenFilter jwtTokenFilter;
 
     private static final String[] PUBLIC_URLS = {
+            // API
             "/auth/**",
             "/v3/api-docs/**",
             "/v3/api-docs.yaml",
@@ -36,11 +39,19 @@ public class SecurityConfig {
             "/webjars/**",
             "/actuator/**",
             "/swagger-config/**",
-            "/*.html",
-            "/favicon.ico",
-            "/**/*.html",
-            "/**/*.css",
-            "/**/*.js"
+            "/api/v1/user/**"
+
+            // Статические ресурсы (Spring Boot стандартные пути)
+//            "/**/*.html",
+//            "/**/*.css",
+//            "/**/*.js",
+//            "/**/*.png",
+//            "/**/*.jpg",
+//            "/**/*.jpeg",
+//            "/**/*.gif",
+//            "/**/*.svg",
+//            "/**/*.ico",
+//            "/favicon.ico"
     };
 
 
@@ -74,7 +85,8 @@ public class SecurityConfig {
                 .cors(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth ->
-                        auth.requestMatchers(PUBLIC_URLS).permitAll()
+                        auth
+                                .requestMatchers(PUBLIC_URLS).permitAll()
                                 .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())

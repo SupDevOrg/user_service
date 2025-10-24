@@ -16,7 +16,6 @@ import ru.sup.userservice.dto.RefreshRequest;
 import ru.sup.userservice.dto.RegisterRequest;
 import ru.sup.userservice.entity.User;
 import ru.sup.userservice.repository.UserRepository;
-import ru.sup.userservice.security.CustomUserDetailsService;
 import ru.sup.userservice.security.JwtUtil;
 
 

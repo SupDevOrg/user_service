@@ -3,6 +3,7 @@ package ru.sup.userservice.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.websocket.AuthenticationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,8 +19,9 @@ import ru.sup.userservice.dto.RegisterRequest;
 import ru.sup.userservice.service.UserService;
 
 @RestController
-@RequestMapping("api/vi/user")
+@RequestMapping("api/v1/user")
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "User Controller", description = "Регистрация, логин и обновление токенов пользователей")
 public class UserController {
 
