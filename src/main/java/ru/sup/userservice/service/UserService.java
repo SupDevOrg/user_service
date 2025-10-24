@@ -1,7 +1,13 @@
 package ru.sup.userservice.service;
 
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import ru.sup.userservice.dto.AuthResponse;
 import ru.sup.userservice.dto.LoginRequest;
@@ -12,6 +18,7 @@ import ru.sup.userservice.entity.User;
 
 //TODO make this
 @Service
+@RequiredArgsConstructor
 public class UserService {
 
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
@@ -20,18 +27,6 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
     private final AuthenticationManager authManager;
-
-    public UserService(
-            UserDetailsService userDetailsService,
-            PasswordEncoder passwordEncoder,
-            JwtUtils jwtUtils,
-            AuthenticationManager authManager
-    ) {
-        this.userDetailsService = userDetailsService;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtUtils = jwtUtils;
-        this.authManager = authManager;
-    }
 
     public AuthResponse register(RegisterRequest request) {
         try {

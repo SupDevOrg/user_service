@@ -1,8 +1,10 @@
 package ru.sup.userservice.controller;
 
+import lombok.RequiredArgsConstructor;
 import org.apache.tomcat.websocket.AuthenticationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -12,9 +14,11 @@ import ru.sup.userservice.dto.AuthResponse;
 import ru.sup.userservice.dto.LoginRequest;
 import ru.sup.userservice.dto.RefreshRequest;
 import ru.sup.userservice.dto.RegisterRequest;
+import ru.sup.userservice.service.UserService;
 
 @RestController
 @RequestMapping("api/vi/user")
+@RequiredArgsConstructor
 public class UserController {
 
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
