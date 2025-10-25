@@ -39,7 +39,11 @@ public class SecurityConfig {
             "/webjars/**",
             "/actuator/**",
             "/swagger-config/**",
-            "/api/v1/user/**"
+
+            // User CRUD
+            "/api/v1/user/login",
+            "/api/v1/user/refresh*",
+            "/api/v1/user/register"
 
             // Статические ресурсы (Spring Boot стандартные пути)
 //            "/**/*.html",
