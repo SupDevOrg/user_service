@@ -8,15 +8,13 @@ import org.apache.tomcat.websocket.AuthenticationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import ru.sup.userservice.dto.AuthResponse;
-import ru.sup.userservice.dto.LoginRequest;
-import ru.sup.userservice.dto.RefreshRequest;
-import ru.sup.userservice.dto.RegisterRequest;
+import org.springframework.web.bind.annotation.*;
+import ru.sup.userservice.dto.*;
+import ru.sup.userservice.repository.UserRepository;
 import ru.sup.userservice.service.UserService;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("api/v1/user")
@@ -28,6 +26,7 @@ public class UserController {
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
     private final UserService userService;
+    private final UserRepository userRepository;
 
     @PostMapping("/register")
     @Operation(summary = "Регистрация нового пользователя")
@@ -75,5 +74,19 @@ public class UserController {
             logger.error("Error during token refresh", e);
             return ResponseEntity.status(401).body("Invalid refresh token");
         }
+    }
+
+    @GetMapping("/{partitionUsername}")
+    public ResponseEntity<?> getUser(@PathVariable String partitionUsername) {
+        List<UserDto> users = userRepository.findByUsernameContainingIgnoreCase(partitionUsername)
+                .stream()
+                .map(u -> new UserDto(u.getId(), u.getUsername()))
+                .collect(Collectors.toList());
+
+        if (users.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(users);
     }
 }
