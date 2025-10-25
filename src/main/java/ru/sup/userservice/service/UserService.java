@@ -33,25 +33,25 @@ public class UserService {
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
 
-    public AuthResponse register(RegisterRequest request) {
-        try {
-            // Проверяем, нет ли уже пользователя с таким логином
-            if (userRepository.findByUsername(request.getUsername()).isPresent()) {
-                log.error("Пользователь с именем '{}' уже существует", request.getUsername());
-                throw new IllegalArgumentException("Пользователь уже существует");
-            }
+    public AuthResponse register(RegisterRequest request) throws IllegalArgumentException {
+        // Проверяем, нет ли уже пользователя с таким логином
+        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
+            log.error("Пользователь с именем '{}' уже существует", request.getUsername());
+            throw new IllegalArgumentException("Пользователь уже существует");
+        }
 
+        try {
             // Создаём нового пользователя
             User user = new User();
             user.setUsername(request.getUsername());
             user.setPassword(passwordEncoder.encode(request.getPassword()));
             userRepository.save(user);
 
-            // Создаём UserDetails (для совместимости с JwtUtil)
+            // Создаём UserDetails (для JWT)
             UserDetails userDetails = org.springframework.security.core.userdetails.User
                     .withUsername(user.getUsername())
                     .password(user.getPassword())
-                    .authorities("USER") // пока что одна базовая роль
+                    .authorities("USER")
                     .build();
 
             // Генерируем токены

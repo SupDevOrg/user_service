@@ -40,7 +40,12 @@ public class UserController {
             } else {
                 throw new AuthenticationException("Registration failed: invalid data");
             }
-        } catch (Exception e) {
+        }
+        catch (IllegalArgumentException e){
+            logger.error("Username is already in use", e);
+            return ResponseEntity.status(409).body("Username is already in use");
+        }
+        catch (Exception e) {
             logger.error("Error during user registration", e);
             return ResponseEntity.status(500).body("Registration failed");
         }
