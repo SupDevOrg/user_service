@@ -83,15 +83,20 @@ public class UserController {
 
     @GetMapping("/{partitionUsername}")
     public ResponseEntity<?> getUser(@PathVariable String partitionUsername) {
-        List<UserDto> users = userRepository.findByUsernameContainingIgnoreCase(partitionUsername)
-                .stream()
-                .map(u -> new UserDto(u.getId(), u.getUsername()))
-                .collect(Collectors.toList());
+        try {
+            List<UserDto> users = userRepository.findByUsernameContainingIgnoreCase(partitionUsername)
+                    .stream()
+                    .map(u -> new UserDto(u.getId(), u.getUsername()))
+                    .collect(Collectors.toList());
 
-        if (users.isEmpty()) {
-            return ResponseEntity.notFound().build();
+            if (users.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            return ResponseEntity.ok(users);
+        } catch (Exception e){
+            return ResponseEntity.status(500).body("Internal server error");
         }
 
-        return ResponseEntity.ok(users);
     }
 }
