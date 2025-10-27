@@ -46,7 +46,7 @@ public class UserController {
     @PostMapping("/register")
     @Operation(
             summary = "Регистрация нового пользователя",
-            description = "Создаёт нового пользователя и возвращает access и refresh токены."
+            description = "Создаёт нового пользователя и возвращает access и refresh токены (refresh токен всегда null)."
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Пользователь успешно зарегистрирован",
@@ -55,7 +55,7 @@ public class UserController {
                             examples = @ExampleObject(value = """
                                     {
                                       "accessToken": "eyJhbGciOiJIUzI1NiIs...",
-                                      "refreshToken": "eyJhbGciOiJIUzI1NiIs..."
+                                      "refreshToken": "null"
                                     }
                                     """))),
             @ApiResponse(responseCode = "409", description = "Имя пользователя уже используется",
@@ -85,7 +85,7 @@ public class UserController {
     @PostMapping("/login")
     @Operation(
             summary = "Логин пользователя",
-            description = "Авторизует пользователя и возвращает пару токенов."
+            description = "Авторизует пользователя и возвращает пару токенов (refresh токен всегда null)."
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Успешный вход",
@@ -94,7 +94,7 @@ public class UserController {
                             examples = @ExampleObject(value = """
                                     {
                                       "accessToken": "eyJhbGciOiJIUzI1NiIs...",
-                                      "refreshToken": "eyJhbGciOiJIUzI1NiIs..."
+                                      "refreshToken": "null"
                                     }
                                     """))),
             @ApiResponse(responseCode = "401", description = "Неверное имя пользователя или пароль",
@@ -184,6 +184,7 @@ public class UserController {
                                     }
                                     """))),
             @ApiResponse(responseCode = "404", description = "Пользователи не найдены"),
+            @ApiResponse(responseCode = "403", description = "Пользователь не авторизован"),
             @ApiResponse(responseCode = "500", description = "Ошибка при поиске пользователей",
                     content = @Content(mediaType = "text/plain",
                             examples = @ExampleObject(value = "Internal server error")))
