@@ -1,0 +1,16 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003
+      author: SecurityTrip
+      changes:
+        - createIndex:
+            tableName: refresh_token
+            indexName: idx_refresh_token_user
+            columns:
+              - column:
+                  name: user_id
+
+      rollback:
+        - dropIndex:
+            tableName: refresh_token
+            indexName: idx_refresh_token_user
