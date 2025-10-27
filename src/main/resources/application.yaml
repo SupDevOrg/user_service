@@ -12,3 +12,12 @@ jwt:
   access-expiration-ms: 900000   # 15 min
   refresh-expiration-ms: 2592000000  # 30 days
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+
