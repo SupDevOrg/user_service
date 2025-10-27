@@ -1,3 +1,7 @@
 databaseChangeLog:
   - include:
       file: db/migration/001-create-users-table.yaml
+  - include:
+      file: db/migration/002-create-refresh-token.yaml
+  - include:
+      file: db/migration/003-add-index-refresh-token-user.yaml
