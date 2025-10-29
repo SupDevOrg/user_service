@@ -10,25 +10,19 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.catalina.webresources.JarWarResourceSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import ru.sup.userservice.dto.*;
-import ru.sup.userservice.entity.RefreshToken;
 import ru.sup.userservice.entity.User;
-import ru.sup.userservice.repository.RefreshTokenRepository;
 import ru.sup.userservice.repository.UserRepository;
-import ru.sup.userservice.security.JwtUtil;
 import ru.sup.userservice.service.UserService;
 
 import java.security.Principal;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,15 +39,14 @@ public class UserController {
 
     private final UserService userService;
     private final UserRepository userRepository;
-    private final RefreshTokenRepository refreshTokenRepository;
-    private final JwtUtil jwtUtil;
+
     // ==============================
     //        REGISTER
     // ==============================
     @PostMapping("/register")
     @Operation(
             summary = "Регистрация нового пользователя",
-            description = "Создаёт нового пользователя и возвращает access и refresh токены."
+            description = "Создаёт нового пользователя и возвращает access и refresh токены (refresh токен всегда null)."
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Пользователь успешно зарегистрирован",
@@ -92,7 +85,7 @@ public class UserController {
     @PostMapping("/login")
     @Operation(
             summary = "Логин пользователя",
-            description = "Авторизует пользователя и возвращает пару токенов."
+            description = "Авторизует пользователя и возвращает пару токенов (refresh токен всегда null)."
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Успешный вход",
@@ -128,7 +121,7 @@ public class UserController {
     @PostMapping("/refresh")
     @Operation(
             summary = "Обновление access токена",
-            description = "Обновляет access токен по RefreshRequest.",
+            description = "Обновляет access токен по имени пользователя (Principal).",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses(value = {
@@ -148,52 +141,23 @@ public class UserController {
                     content = @Content(mediaType = "text/plain",
                             examples = @ExampleObject(value = "Internal server error")))
     })
-
-
-    public AuthResponse refreshByToken(RefreshRequest request) {
+    public ResponseEntity<?> refresh(Principal principal) {
         try {
-            String refreshTokenValue = request.getRefreshToken();
-
-            if (refreshTokenValue == null || refreshTokenValue.isBlank()) {
-                throw new IllegalArgumentException("No refresh token found in request");
+            if (principal == null) {
+                return ResponseEntity.status(401).body("Unauthorized");
             }
 
-            // Находим refresh-токен в БД
-            RefreshToken storedToken = refreshTokenRepository.findByToken(refreshTokenValue)
-                    .orElseThrow(() -> new IllegalArgumentException("Refresh token not found"));
+            String username = principal.getName();
+            String newAccessToken = userService.refreshByUsername(username);
 
-            // Проверяем, не был ли отозван токен
-            if (storedToken.isRevoked()) {
-                throw new IllegalArgumentException("Refresh token has been revoked");
+            if (newAccessToken == null) {
+                return ResponseEntity.status(401).body("No valid refresh token found for user");
             }
 
-            // Проверяем срок действия токена
-            User user = storedToken.getUser();
-            UserDetails userDetails = userService.buildUserDetails(user);
-
-            if (storedToken.getExpiryDate().isAfter(Instant.now())) {
-                // Токен ещё жив — создаём новый access token, refresh остаётся прежним
-                String newAccessToken = jwtUtil.generateAccessToken(userDetails);
-                log.info("Обновлён access-токен по действующему refresh для пользователя {}", user.getUsername());
-                return new AuthResponse(newAccessToken, storedToken.getToken());
-            } else {
-                // Токен истёк — помечаем как revoked
-                storedToken.setRevoked(true);
-                refreshTokenRepository.save(storedToken);
-
-                // Создаём новый refresh-токен
-                RefreshToken newRefreshToken = userService.createAndSaveRefreshToken(user, userDetails);
-
-                // Создаём новый access-токен
-                String newAccessToken = jwtUtil.generateAccessToken(userDetails);
-
-                log.info("Refresh-токен обновлён для пользователя {}", user.getUsername());
-                return new AuthResponse(newAccessToken, newRefreshToken.getToken());
-            }
-
+            return ResponseEntity.ok(new AuthResponse(newAccessToken, null));
         } catch (Exception e) {
-            log.error("Ошибка при обновлении токена", e);
-            throw new RuntimeException("Ошибка обновления токена", e);
+            logger.error("Error during token refresh", e);
+            return ResponseEntity.status(500).body("Internal server error");
         }
     }
 

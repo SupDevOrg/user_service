@@ -11,7 +11,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import ru.sup.userservice.dto.AuthResponse;
 import ru.sup.userservice.dto.LoginRequest;
-import ru.sup.userservice.dto.RefreshRequest;
 import ru.sup.userservice.dto.RegisterRequest;
 import ru.sup.userservice.entity.RefreshToken;
 import ru.sup.userservice.entity.User;
@@ -68,7 +67,7 @@ public class UserService {
             refreshTokenRepository.save(refreshTokenObj);
 
             // Возвращаем только access-токен (refresh не отправляем клиенту)
-            return new AuthResponse(accessToken, refreshToken);
+            return new AuthResponse(accessToken, null);
 
         } catch (Exception e) {
             log.error("Ошибка при регистрации пользователя", e);
@@ -105,7 +104,7 @@ public class UserService {
                 refreshToken = createAndSaveRefreshToken(user, userDetails);
             }
 
-            return new AuthResponse(accessToken, refreshToken.getToken());
+            return new AuthResponse(accessToken, null);
 
         } catch (Exception e) {
             log.error("Ошибка при логине пользователя", e);
@@ -131,7 +130,7 @@ public class UserService {
     }
 
     /** Вспомогательный метод: создать и сохранить новый refresh-токен */
-    public RefreshToken createAndSaveRefreshToken(User user, UserDetails userDetails) {
+    private RefreshToken createAndSaveRefreshToken(User user, UserDetails userDetails) {
         String tokenValue = jwtUtil.generateRefreshToken(userDetails);
         RefreshToken refreshToken = RefreshToken.builder()
                 .token(tokenValue)
@@ -143,7 +142,7 @@ public class UserService {
     }
 
     /** Построение UserDetails из User */
-    public UserDetails buildUserDetails(User user) {
+    private UserDetails buildUserDetails(User user) {
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getUsername())
                 .password(user.getPassword())
