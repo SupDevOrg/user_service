@@ -19,14 +19,22 @@ jobs:
       - name: Extract version
         id: version
         run: |
+          # Получаем последний git tag
           TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-          echo "Last tag: $TAG"
-
+          
+          # Увеличиваем патч
           IFS='.' read -r major minor patch <<<"${TAG#v}"
           patch=$((patch + 1))
           NEW_TAG="v${major}.${minor}.${patch}"
-
+          
+          # Проверяем, существует ли тег в удалённом
+          if git ls-remote --tags origin | grep -q "refs/tags/$NEW_TAG"; then
+            echo "Tag $NEW_TAG already exists, using commit SHA instead"
+            NEW_TAG="${GITHUB_SHA::8}"  # первые 8 символов SHA
+          fi
+          
           echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
+
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
