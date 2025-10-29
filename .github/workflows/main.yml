@@ -19,20 +19,28 @@ jobs:
       - name: Extract version
         id: version
         run: |
-          # Получаем последний git tag
-          TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-          
-          # Увеличиваем патч
-          IFS='.' read -r major minor patch <<<"${TAG#v}"
-          patch=$((patch + 1))
-          NEW_TAG="v${major}.${minor}.${patch}"
-          
-          # Проверяем, существует ли тег в удалённом
-          if git ls-remote --tags origin | grep -q "refs/tags/$NEW_TAG"; then
-            echo "Tag $NEW_TAG already exists, using commit SHA instead"
-            NEW_TAG="${GITHUB_SHA::8}"  # первые 8 символов SHA
+          # Получаем все теги с префиксом v и сортируем по семантике
+          TAG=$(git tag -l "v*" --sort=-v:refname | head -n 1)
+          if [ -z "$TAG" ]; then
+            TAG="v0.0.0"
           fi
-          
+          echo "Last tag: $TAG"
+      
+          # Разбиваем на мажор, минор, патч
+          IFS='.' read -r major minor patch <<<"${TAG#v}"
+      
+          # Увеличиваем патч
+          patch=$((patch + 1))
+      
+          # Если патч >=10, сбрасываем патч и увеличиваем минор
+          if [ $patch -ge 10 ]; then
+            patch=0
+            minor=$((minor + 1))
+          fi
+      
+          NEW_TAG="v${major}.${minor}.${patch}"
+          echo "New tag: $NEW_TAG"
+      
           echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
 
 
