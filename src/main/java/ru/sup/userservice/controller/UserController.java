@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -29,12 +28,10 @@ import ru.sup.userservice.repository.UserRepository;
 import ru.sup.userservice.security.jwt.JwtUtil;
 import ru.sup.userservice.service.UserService;
 
-import java.security.Principal;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -276,7 +273,7 @@ public class UserController {
     ) {
         try {
             Pageable pageable = PageRequest.of(page, size);
-            Page<User> usersPage = userRepository.findByUsernameContainingIgnoreCase(partitionUsername, pageable);
+            Page<User> usersPage = userRepository.findByUsernameStartingWithIgnoreCase(partitionUsername, pageable);
 
             List<UserDto> users = usersPage
                     .getContent()
