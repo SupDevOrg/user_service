@@ -1,4 +1,4 @@
-package ru.sup.userservice.security;
+package ru.sup.userservice.security.jwt;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;

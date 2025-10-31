@@ -1,5 +1,6 @@
 package ru.sup.userservice.service;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,15 +12,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import ru.sup.userservice.dto.AuthResponse;
 import ru.sup.userservice.dto.LoginRequest;
-import ru.sup.userservice.dto.RefreshRequest;
 import ru.sup.userservice.dto.RegisterRequest;
 import ru.sup.userservice.entity.RefreshToken;
 import ru.sup.userservice.entity.User;
 import ru.sup.userservice.repository.RefreshTokenRepository;
 import ru.sup.userservice.repository.UserRepository;
-import ru.sup.userservice.security.JwtUtil;
+import ru.sup.userservice.security.jwt.JwtUtil;
 
 import java.time.Instant;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -79,6 +80,7 @@ public class UserService {
     /** Логин пользователя */
     public AuthResponse login(LoginRequest request) {
         try {
+            log.info("Trying to authenticate: {}", request.getUsername());
             authManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             request.getUsername(),
@@ -111,6 +113,30 @@ public class UserService {
             log.error("Ошибка при логине пользователя", e);
             throw new RuntimeException("Ошибка логина", e);
         }
+    }
+
+    @Transactional
+    public AuthResponse update(User user) {
+        log.info("Обновление пользователя: {}", user.getUsername());
+
+        // если пароль не закодирован — кодируем
+        if (user.getPassword() != null && !user.getPassword().startsWith("$2a$")) {
+            log.info("Шифрование нового пароля для {}", user.getUsername());
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+        }
+
+        // сохраняем изменения
+        userRepository.save(user);
+
+        // инвалидируем старые refresh токены
+        refreshTokenRepository.revokeAllByUser(user);
+
+        // создаём новые токены
+        UserDetails userDetails = buildUserDetails(user);
+        String accessToken = jwtUtil.generateAccessToken(userDetails);
+        RefreshToken refreshToken = createAndSaveRefreshToken(user, userDetails);
+
+        return new AuthResponse(accessToken, refreshToken.getToken());
     }
 
     /** Обновление access-токена по существующему refresh-токену */
@@ -150,4 +176,9 @@ public class UserService {
                 .authorities("USER")
                 .build();
     }
+
+    public Optional<User> findByUsername(String username) {
+        return userRepository.findByUsername(username);
+    }
+
 }
