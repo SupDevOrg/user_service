@@ -13,11 +13,13 @@ jwt:
   refresh-expiration-ms: 2592000000  # 30 days
 
 management:
+  server:
+    port: 8081  # отдельный порт для актуатора
   endpoints:
     web:
       exposure:
         include: health,info
   endpoint:
     health:
-      show-details: when-authorized
+      show-details: always  # показывать детали всегда, без авторизации
 

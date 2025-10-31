@@ -10,24 +10,24 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.catalina.webresources.JarWarResourceSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 import ru.sup.userservice.dto.*;
 import ru.sup.userservice.entity.RefreshToken;
 import ru.sup.userservice.entity.User;
 import ru.sup.userservice.repository.RefreshTokenRepository;
 import ru.sup.userservice.repository.UserRepository;
-import ru.sup.userservice.security.JwtUtil;
+import ru.sup.userservice.security.jwt.JwtUtil;
 import ru.sup.userservice.service.UserService;
 
-import java.security.Principal;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -148,8 +148,6 @@ public class UserController {
                     content = @Content(mediaType = "text/plain",
                             examples = @ExampleObject(value = "Internal server error")))
     })
-
-
     public AuthResponse refreshByToken(RefreshRequest request) {
         try {
             String refreshTokenValue = request.getRefreshToken();
@@ -197,6 +195,49 @@ public class UserController {
         }
     }
 
+
+    @PutMapping("/update")
+    @Operation(
+            summary = "Обновление данных пользователя",
+            description = "Позволяет изменить логин и/или пароль текущего пользователя",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Данные пользователя успешно обновлены"),
+            @ApiResponse(responseCode = "400", description = "Некорректные данные"),
+            @ApiResponse(responseCode = "401", description = "Пользователь не авторизован")
+    })
+    public ResponseEntity<AuthResponse> update(@RequestBody UpdateRequest request,
+                                               Authentication authentication) {
+        String currentUsername = authentication.getName();
+        User user = userService.findByUsername(currentUsername)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        boolean changed = false;
+
+        // ✅ обновляем логин, если передан
+        if (request.getUsername() != null && !request.getUsername().isBlank()
+                && !request.getUsername().equals(user.getUsername())) {
+            user.setUsername(request.getUsername());
+            changed = true;
+        }
+
+        // ✅ обновляем пароль, если передан
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            user.setPassword(request.getPassword());
+            changed = true;
+        }
+
+        if (!changed) {
+            return ResponseEntity.badRequest()
+                    .body(new AuthResponse("Нет изменений", null));
+        }
+
+        // ⚙️ обновляем пользователя через сервис
+        AuthResponse response = userService.update(user);
+        return ResponseEntity.ok(response);
+    }
+
     // ==============================
     //        SEARCH USERS
     // ==============================
@@ -232,7 +273,7 @@ public class UserController {
     ) {
         try {
             Pageable pageable = PageRequest.of(page, size);
-            Page<User> usersPage = userRepository.findByUsernameContainingIgnoreCase(partitionUsername, pageable);
+            Page<User> usersPage = userRepository.findByUsernameStartingWithIgnoreCase(partitionUsername, pageable);
 
             List<UserDto> users = usersPage
                     .getContent()

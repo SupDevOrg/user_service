@@ -1,4 +1,4 @@
-package ru.sup.userservice.security;
+package ru.sup.userservice.security.jwt;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
