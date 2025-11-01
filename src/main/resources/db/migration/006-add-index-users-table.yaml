@@ -1,0 +1,16 @@
+databaseChangeLog:
+  - changeSet:
+      id: 006
+      author: SecurityTrip
+      changes:
+        - createIndex:
+            tableName: users
+            indexName: idx_users
+            columns:
+              - column:
+                  name: id
+
+      rollback:
+        - dropIndex:
+            tableName: users
+            indexName: idx_users
