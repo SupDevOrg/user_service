@@ -37,7 +37,7 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
 
     // OpenAPI + Swagger UI
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
 
     // === REDIS ===
     implementation("org.springframework.boot:spring-boot-starter-data-redis")

@@ -48,17 +48,6 @@ public class SecurityConfig {
             "/api/v1/user/refresh*",
             "/api/v1/user/register"
 
-            // Статические ресурсы (Spring Boot стандартные пути)
-//            "/**/*.html",
-//            "/**/*.css",
-//            "/**/*.js",
-//            "/**/*.png",
-//            "/**/*.jpg",
-//            "/**/*.jpeg",
-//            "/**/*.gif",
-//            "/**/*.svg",
-//            "/**/*.ico",
-//            "/favicon.ico"
     };
 
 

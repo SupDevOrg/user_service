@@ -25,7 +25,7 @@ spring:
     redis:
       time-to-live: 600000  # 10 мин для кэша поиска
       use-key-prefix: true
-      key-prefix: user-search
+      key-prefix: user-service
 
   data:
     redis:

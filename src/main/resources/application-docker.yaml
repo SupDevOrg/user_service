@@ -15,7 +15,7 @@ spring:
     type: redis
     redis:
       time-to-live: 600000
-      key-prefix: user-search
+      key-prefix: user-service
 
   data:
     redis:

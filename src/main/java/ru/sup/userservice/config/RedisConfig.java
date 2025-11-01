@@ -20,7 +20,7 @@ public class RedisConfig {
                 .entryTtl(Duration.ofMinutes(10))
                 .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new GenericJackson2JsonRedisSerializer()))
-                .prefixCacheNameWith("user-search:")
+                .prefixCacheNameWith("user-service:")
                 .disableCachingNullValues();
 
         return RedisCacheManager.builder(factory)
