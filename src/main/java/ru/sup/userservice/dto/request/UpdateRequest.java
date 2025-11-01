@@ -1,4 +1,4 @@
-package ru.sup.userservice.dto;
+package ru.sup.userservice.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;

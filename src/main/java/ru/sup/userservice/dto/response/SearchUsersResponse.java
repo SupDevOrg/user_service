@@ -1,9 +1,10 @@
-package ru.sup.userservice.dto;
+package ru.sup.userservice.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import ru.sup.userservice.dto.UserDto;
 
 import java.util.List;
 

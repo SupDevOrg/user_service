@@ -5,3 +5,5 @@ databaseChangeLog:
       file: db/migration/002-create-refresh-token.yaml
   - include:
       file: db/migration/003-add-index-refresh-token-user.yaml
+  - include:
+      file: db/migration/004-add-email-phone-to-users.yaml

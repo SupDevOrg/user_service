@@ -1,11 +1,11 @@
-package ru.sup.userservice.dto;
+package ru.sup.userservice.dto.request;
 
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class RegisterRequest {
+public class LoginRequest {
 
     private String username;
 

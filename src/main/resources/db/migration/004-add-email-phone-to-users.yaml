@@ -1,0 +1,28 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004
+      author: SecurityTrip
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: email
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: true
+                    unique: true
+              - column:
+                  name: phone
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: true
+                    unique: true
+
+      rollback:
+        - dropColumn:
+            tableName: users
+            columnName: email
+        - dropColumn:
+            tableName: users
+            columnName: phone
