@@ -17,10 +17,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
-import ru.sup.userservice.dto.request.LoginRequest;
-import ru.sup.userservice.dto.request.RefreshRequest;
-import ru.sup.userservice.dto.request.RegisterRequest;
-import ru.sup.userservice.dto.request.UpdateRequest;
+import ru.sup.userservice.dto.request.*;
 import ru.sup.userservice.dto.response.AuthResponse;
 import ru.sup.userservice.dto.response.SearchUsersResponse;
 import ru.sup.userservice.entity.RefreshToken;
@@ -120,6 +117,200 @@ public class UserController {
     }
 
     // ==============================
+    //        DELETE USER
+    // ==============================
+    @Operation(
+            summary = "Удаление пользователя",
+            description = "Удаляет пользователя, который отправил запрос",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Пользователь удалён"),
+            @ApiResponse(responseCode = "401", description = "Пользователь не авторизован"),
+            @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера"),
+    })
+    @DeleteMapping("/delete")
+    private ResponseEntity<?> delete(Authentication authentication){
+        try {
+            String currentUsername = authentication.getName();
+            User user = userService.findByUsername(currentUsername)
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+            if (user != null){
+                log.info("Deleting user {}", user.getUsername());
+                userService.deleteUser(user);
+                return ResponseEntity.ok().build();
+            }
+        } catch (UsernameNotFoundException e){
+            return ResponseEntity.status(401).build();
+        }
+        return ResponseEntity.status(500).build();
+
+    }
+
+    // ==============================
+    //        UPDATE USER
+    // ==============================
+    @Operation(
+            summary = "Обновление данных пользователя",
+            description = "Позволяет изменить логин и/или пароль текущего пользователя",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Данные пользователя успешно обновлены"),
+            @ApiResponse(responseCode = "400", description = "Некорректные данные"),
+            @ApiResponse(responseCode = "401", description = "Пользователь не авторизован")
+    })
+    @PutMapping("/update")
+    public ResponseEntity<AuthResponse> update(@RequestBody UpdateRequest request,
+                                               Authentication authentication) {
+        String currentUsername = authentication.getName();
+        User user = userService.findByUsername(currentUsername)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        boolean changed = false;
+
+        // ✅ обновляем логин, если передан
+        if (request.getUsername() != null && !request.getUsername().isBlank()
+                && !request.getUsername().equals(user.getUsername())) {
+            user.setUsername(request.getUsername());
+            changed = true;
+        }
+
+        // ✅ обновляем пароль, если передан
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            user.setPassword(request.getPassword());
+            changed = true;
+        }
+
+        if (!changed) {
+            return ResponseEntity.badRequest()
+                    .body(new AuthResponse("Нет изменений", null));
+        }
+
+        // ⚙️ обновляем пользователя через сервис
+        AuthResponse response = userService.update(user);
+        return ResponseEntity.ok(response);
+    }
+
+    // ==============================
+    //        SEARCH USERS
+    // ==============================
+    @GetMapping("/{partitionUsername}")
+    @Operation(
+            summary = "Поиск пользователей по подстроке имени с пагинацией",
+            description = "Возвращает пользователей, чьи имена содержат указанную подстроку."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Пользователи найдены",
+                    content = @Content(mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "users": [
+                                        {"id": 1, "username": "johndoe"},
+                                        {"id": 2, "username": "john_smith"}
+                                      ],
+                                      "currentPage": 0,
+                                      "totalItems": 2,
+                                      "totalPages": 1
+                                    }
+                                    """))),
+            @ApiResponse(responseCode = "404", description = "Пользователи не найдены"),
+            @ApiResponse(responseCode = "403", description = "Пользователь не авторизован"),
+            @ApiResponse(responseCode = "400", description = "Некорректный запрос"),
+            @ApiResponse(responseCode = "500", description = "Ошибка при поиске пользователей")
+    })
+    public ResponseEntity<SearchUsersResponse> getUser(
+            @PathVariable String partitionUsername,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        try {
+            SearchUsersResponse response = userService.searchUsersByUsernamePrefix(partitionUsername, page, size);
+
+            if (response.getUsers().isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(null); // или кастомный error
+        } catch (Exception e) {
+            log.error("Error while searching users by prefix: {}", partitionUsername, e);
+            return ResponseEntity.status(500).body(null);
+        }
+    }
+
+    // ==============================
+    //           ADD EMAIL
+    // ==============================
+    @Operation(
+            summary = "Добавление Email пользователю",
+            description = "Первичное добавление Email пользователю, во время регистрации, в иных случаях следует использовать /update",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Email добавлен"),
+            @ApiResponse(responseCode = "401", description = "Пользователь не авторизован"),
+            @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера"),
+    })
+    @PostMapping("/addEmail")
+    private ResponseEntity<?> addEmail(@RequestBody AddEmailRequest request,
+                                       Authentication authentication){
+        try {
+            String currentUsername = authentication.getName();
+            User user = userService.findByUsername(currentUsername)
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+            int status = userService.addEmail(user, request.getEmail());
+            switch (status){
+                case 0:
+                    return ResponseEntity.ok().build();
+                case 1:
+                    return ResponseEntity.status(500).build();
+            }
+        } catch (UsernameNotFoundException e){
+            return ResponseEntity.status(401).build();
+        }
+        return ResponseEntity.status(500).build();
+    }
+
+    // ==============================
+    //        ADD PHONE NUMBER
+    // ==============================
+    @Operation(
+            summary = "Добавление номера телефона пользователю",
+            description = "Первичное добавление номера телефона пользователю, для обновления следует использовать /update",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Номер телефона добавлен"),
+            @ApiResponse(responseCode = "401", description = "Пользователь не авторизован"),
+            @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера"),
+    })
+    @PostMapping("/addPhone")
+    private ResponseEntity<?> addPhone(@RequestBody AddPhoneRequest request,
+                                       Authentication authentication){
+        try {
+            String currentUsername = authentication.getName();
+            User user = userService.findByUsername(currentUsername)
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+            int status = userService.addPhone(user, request.getPhone());
+            switch (status){
+                case 0:
+                    return ResponseEntity.ok().build();
+                case 1:
+                    return ResponseEntity.status(500).build();
+            }
+        } catch (UsernameNotFoundException e){
+            return ResponseEntity.status(401).build();
+        }
+        return ResponseEntity.status(500).build();
+    }
+
+    // ==============================
     //        REFRESH TOKEN
     // ==============================
     @Operation(
@@ -192,124 +383,4 @@ public class UserController {
         }
     }
 
-
-
-    @Operation(
-            summary = "Обновление данных пользователя",
-            description = "Позволяет изменить логин и/или пароль текущего пользователя",
-            security = @SecurityRequirement(name = "bearerAuth")
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Данные пользователя успешно обновлены"),
-            @ApiResponse(responseCode = "400", description = "Некорректные данные"),
-            @ApiResponse(responseCode = "401", description = "Пользователь не авторизован")
-    })
-    @PutMapping("/update")
-    public ResponseEntity<AuthResponse> update(@RequestBody UpdateRequest request,
-                                               Authentication authentication) {
-        String currentUsername = authentication.getName();
-        User user = userService.findByUsername(currentUsername)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-
-        boolean changed = false;
-
-        // ✅ обновляем логин, если передан
-        if (request.getUsername() != null && !request.getUsername().isBlank()
-                && !request.getUsername().equals(user.getUsername())) {
-            user.setUsername(request.getUsername());
-            changed = true;
-        }
-
-        // ✅ обновляем пароль, если передан
-        if (request.getPassword() != null && !request.getPassword().isBlank()) {
-            user.setPassword(request.getPassword());
-            changed = true;
-        }
-
-        if (!changed) {
-            return ResponseEntity.badRequest()
-                    .body(new AuthResponse("Нет изменений", null));
-        }
-
-        // ⚙️ обновляем пользователя через сервис
-        AuthResponse response = userService.update(user);
-        return ResponseEntity.ok(response);
-    }
-
-    @Operation(
-            summary = "Удаление пользователя",
-            description = "Удаляет пользователя, который отправил запрос",
-            security = @SecurityRequirement(name = "bearerAuth")
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Пользователь удалён"),
-            @ApiResponse(responseCode = "401", description = "Пользователь не авторизован"),
-            @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера"),
-    })
-    @DeleteMapping("/delete")
-    private ResponseEntity<?> delete(Authentication authentication){
-        try {
-            String currentUsername = authentication.getName();
-            User user = userService.findByUsername(currentUsername)
-                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-
-            if (user != null){
-                userService.deleteUser(user);
-                return ResponseEntity.ok().build();
-            }
-        } catch (UsernameNotFoundException e){
-            return ResponseEntity.status(401).build();
-        }
-        return ResponseEntity.status(500).build();
-
-    }
-
-    // ==============================
-    //        SEARCH USERS
-    // ==============================
-    @GetMapping("/{partitionUsername}")
-    @Operation(
-            summary = "Поиск пользователей по подстроке имени с пагинацией",
-            description = "Возвращает пользователей, чьи имена содержат указанную подстроку."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Пользователи найдены",
-                    content = @Content(mediaType = "application/json",
-                            examples = @ExampleObject(value = """
-                                    {
-                                      "users": [
-                                        {"id": 1, "username": "johndoe"},
-                                        {"id": 2, "username": "john_smith"}
-                                      ],
-                                      "currentPage": 0,
-                                      "totalItems": 2,
-                                      "totalPages": 1
-                                    }
-                                    """))),
-            @ApiResponse(responseCode = "404", description = "Пользователи не найдены"),
-            @ApiResponse(responseCode = "403", description = "Пользователь не авторизован"),
-            @ApiResponse(responseCode = "400", description = "Некорректный запрос"),
-            @ApiResponse(responseCode = "500", description = "Ошибка при поиске пользователей")
-    })
-    public ResponseEntity<SearchUsersResponse> getUser(
-            @PathVariable String partitionUsername,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
-        try {
-            SearchUsersResponse response = userService.searchUsersByUsernamePrefix(partitionUsername, page, size);
-
-            if (response.getUsers().isEmpty()) {
-                return ResponseEntity.notFound().build();
-            }
-
-            return ResponseEntity.ok(response);
-
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(null); // или кастомный error
-        } catch (Exception e) {
-            log.error("Error while searching users by prefix: {}", partitionUsername, e);
-            return ResponseEntity.status(500).body(null);
-        }
-    }
 }

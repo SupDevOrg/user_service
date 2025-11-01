@@ -150,6 +150,26 @@ public class UserService {
         userRepository.delete(user);
     }
 
+    public int addEmail(User user, String email) {
+        try{
+            userRepository.addEmailForUser(user, email);
+            return 0;
+        } catch (Exception e){
+            log.error("Exception while adding email for user: {}, message: {}", user.getUsername(), e.getMessage());
+            return 1;
+        }
+    }
+
+    public int addPhone(User user, String phone) {
+        try{
+            userRepository.addPhoneForUser(user, phone);
+            return 0;
+        } catch (Exception e){
+            log.error("Exception while adding phone for user: {}, message: {}", user.getUsername(), e.getMessage());
+            return 1;
+        }
+    }
+
     @Cacheable(
             value = "user-search",
             key = "#prefix + ':' + #page + ':' + #size"
@@ -207,6 +227,7 @@ public class UserService {
     public Optional<User> findByUsername(String username) {
         return userRepository.findByUsername(username);
     }
+
 
 
 }
