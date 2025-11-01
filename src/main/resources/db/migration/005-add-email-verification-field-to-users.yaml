@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005
+      author: SecurityTrip
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: emailVerification
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+
+      rollback:
+        - dropColumn:
+            tableName: users
+            columnName: emailVerification

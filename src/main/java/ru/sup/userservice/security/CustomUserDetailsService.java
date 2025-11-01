@@ -14,7 +14,7 @@ import ru.sup.userservice.repository.UserRepository;
 @Slf4j
 public class CustomUserDetailsService implements UserDetailsService {
 
-    private final UserRepository userRepository; // твой репо
+    private final UserRepository userRepository;
 
 
     @Override

@@ -1,4 +1,4 @@
-package ru.sup.userservice.dto;
+package ru.sup.userservice.dto.response;
 
 import lombok.*;
 

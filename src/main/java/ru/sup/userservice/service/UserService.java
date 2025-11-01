@@ -14,6 +14,10 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import ru.sup.userservice.dto.*;
+import ru.sup.userservice.dto.request.LoginRequest;
+import ru.sup.userservice.dto.request.RegisterRequest;
+import ru.sup.userservice.dto.response.AuthResponse;
+import ru.sup.userservice.dto.response.SearchUsersResponse;
 import ru.sup.userservice.entity.RefreshToken;
 import ru.sup.userservice.entity.User;
 import ru.sup.userservice.repository.RefreshTokenRepository;
@@ -142,6 +146,30 @@ public class UserService {
         return new AuthResponse(accessToken, refreshToken.getToken());
     }
 
+    public void deleteUser(User user) {
+        userRepository.delete(user);
+    }
+
+    public int addEmail(User user, String email) {
+        try{
+            userRepository.addEmailForUser(user, email);
+            return 0;
+        } catch (Exception e){
+            log.error("Exception while adding email for user: {}, message: {}", user.getUsername(), e.getMessage());
+            return 1;
+        }
+    }
+
+    public int addPhone(User user, String phone) {
+        try{
+            userRepository.addPhoneForUser(user, phone);
+            return 0;
+        } catch (Exception e){
+            log.error("Exception while adding phone for user: {}, message: {}", user.getUsername(), e.getMessage());
+            return 1;
+        }
+    }
+
     @Cacheable(
             value = "user-search",
             key = "#prefix + ':' + #page + ':' + #size"
@@ -199,5 +227,7 @@ public class UserService {
     public Optional<User> findByUsername(String username) {
         return userRepository.findByUsername(username);
     }
+
+
 
 }

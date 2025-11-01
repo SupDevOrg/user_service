@@ -17,7 +17,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import ru.sup.userservice.security.CustomUserDetailsService;
 import ru.sup.userservice.security.jwt.JwtTokenFilter;
-import ru.sup.userservice.security.jwt.JwtUtil;
 
 @Configuration
 @EnableMethodSecurity
@@ -25,7 +24,6 @@ import ru.sup.userservice.security.jwt.JwtUtil;
 @Slf4j
 public class SecurityConfig {
 
-    private final JwtUtil jwtUtil;
     private final CustomUserDetailsService userDetailsService;
     private final JwtTokenFilter jwtTokenFilter;
 
@@ -48,17 +46,6 @@ public class SecurityConfig {
             "/api/v1/user/refresh*",
             "/api/v1/user/register"
 
-            // Статические ресурсы (Spring Boot стандартные пути)
-//            "/**/*.html",
-//            "/**/*.css",
-//            "/**/*.js",
-//            "/**/*.png",
-//            "/**/*.jpg",
-//            "/**/*.jpeg",
-//            "/**/*.gif",
-//            "/**/*.svg",
-//            "/**/*.ico",
-//            "/favicon.ico"
     };
 
 
