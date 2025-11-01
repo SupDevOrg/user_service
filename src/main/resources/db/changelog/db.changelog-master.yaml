@@ -9,3 +9,5 @@ databaseChangeLog:
       file: db/migration/004-add-email-phone-to-users.yaml
   - include:
       file: db/migration/005-add-email-verification-field-to-users.yaml
+  - include:
+      file: db/migration/006-add-index-users-table.yaml
