@@ -12,6 +12,9 @@ spring:
       connection-timeout: 5000
       idle-timeout: 300000
 
+  jpa:
+    show-sql: false  # Отключаем дублирование SQL в консоль
+
   cache:
     type: redis
     redis:
@@ -56,3 +59,5 @@ logging:
   level:
     root: INFO
     ru.sup.userservice: INFO
+    org.hibernate.SQL: WARN                    # Отключаем SQL-запросы
+    org.hibernate.type.descriptor.sql: WARN    # Отключаем bind-параметры
