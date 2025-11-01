@@ -4,15 +4,16 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import ru.sup.userservice.dto.AuthResponse;
-import ru.sup.userservice.dto.LoginRequest;
-import ru.sup.userservice.dto.RegisterRequest;
+import ru.sup.userservice.dto.*;
 import ru.sup.userservice.entity.RefreshToken;
 import ru.sup.userservice.entity.User;
 import ru.sup.userservice.repository.RefreshTokenRepository;
@@ -20,6 +21,7 @@ import ru.sup.userservice.repository.UserRepository;
 import ru.sup.userservice.security.jwt.JwtUtil;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -27,7 +29,6 @@ import java.util.Optional;
 @Slf4j
 public class UserService {
 
-    private final UserDetailsService userDetailsService;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authManager;
     private final UserRepository userRepository;
@@ -36,6 +37,7 @@ public class UserService {
 
     @Value("${jwt.refresh-expiration-ms}")
     private long refreshTokenExpirationMs;
+    private final String CACHE_NAME = "user-search";
 
     /** Регистрация нового пользователя */
     public AuthResponse register(RegisterRequest request) {
@@ -127,6 +129,7 @@ public class UserService {
 
         // сохраняем изменения
         userRepository.save(user);
+        evictAllSearchCaches();
 
         // инвалидируем старые refresh токены
         refreshTokenRepository.revokeAllByUser(user);
@@ -139,21 +142,37 @@ public class UserService {
         return new AuthResponse(accessToken, refreshToken.getToken());
     }
 
-    /** Обновление access-токена по существующему refresh-токену */
-    public String refreshByUsername(String username) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
-        RefreshToken refreshToken = refreshTokenRepository.findByUserAndRevokedFalse(user)
-                .orElse(null);
-
-        if (refreshToken == null || refreshToken.getExpiryDate().isBefore(Instant.now())) {
-            log.warn("Refresh token отсутствует или истёк для пользователя {}", username);
-            return null;
+    @Cacheable(
+            value = "user-search",
+            key = "#prefix + ':' + #page + ':' + #size"
+    )
+    public SearchUsersResponse searchUsersByUsernamePrefix(String prefix, int page, int size) {
+        String trimmed = prefix.trim();
+        if (trimmed.isEmpty()) {
+            throw new IllegalArgumentException("Search prefix cannot be empty");
         }
 
-        UserDetails userDetails = buildUserDetails(user);
-        return jwtUtil.generateAccessToken(userDetails);
+        Page<User> usersPage = userRepository.findByUsernameStartingWithIgnoreCase(
+                trimmed, PageRequest.of(page, size));
+
+        List<UserDto> dtos = usersPage.getContent().stream()
+                .map(u -> new UserDto(u.getId(), u.getUsername()))
+                .toList();
+
+        log.info("Cache MISS for search: prefix={}, page={}, size={}", trimmed, page, size);
+
+        return new SearchUsersResponse(
+                dtos,
+                usersPage.getNumber(),
+                usersPage.getTotalElements(),
+                usersPage.getTotalPages()
+        );
+    }
+
+    // Опционально: метод для очистки кэша (например, при обновлении пользователя)
+    @CacheEvict(value = CACHE_NAME, allEntries = true)
+    public void evictAllSearchCaches() {
+        log.info("All user search caches evicted");
     }
 
     /** Вспомогательный метод: создать и сохранить новый refresh-токен */

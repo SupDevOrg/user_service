@@ -1,25 +1,67 @@
 spring:
   application:
-    name: user service
+    name: user-service
+
   datasource:
     url: jdbc:postgresql://localhost:5432/userDB
     username: admin
     password: admin123
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      connection-timeout: 5000
+      idle-timeout: 300000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  cache:
+    type: redis
+    redis:
+      time-to-live: 600000  # 10 мин для кэша поиска
+      use-key-prefix: true
+      key-prefix: user-search
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2s
+      connect-timeout: 1s
+      client-type: lettuce
+      lettuce:
+        pool:
+          enabled: true
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: 1s
 
 jwt:
   secret: ${JWT_SECRET:change_me_in_prod}
-  access-expiration-ms: 900000   # 15 min
-  refresh-expiration-ms: 2592000000  # 30 days
+  access-expiration-ms: 900000      # 15 мин
+  refresh-expiration-ms: 2592000000 # 30 дней
 
 management:
   server:
-    port: 8081  # отдельный порт для актуатора
+    port: 8081
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics
   endpoint:
     health:
-      show-details: always  # показывать детали всегда, без авторизации
+      show-details: always
+    metrics:
+      access: unrestricted
 
+logging:
+  level:
+    ru.sup.userservice: DEBUG
+    org.springframework.cache: TRACE
+    org.springframework.data.redis: DEBUG

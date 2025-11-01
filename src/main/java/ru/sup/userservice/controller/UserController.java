@@ -12,9 +12,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -24,15 +21,10 @@ import ru.sup.userservice.dto.*;
 import ru.sup.userservice.entity.RefreshToken;
 import ru.sup.userservice.entity.User;
 import ru.sup.userservice.repository.RefreshTokenRepository;
-import ru.sup.userservice.repository.UserRepository;
 import ru.sup.userservice.security.jwt.JwtUtil;
 import ru.sup.userservice.service.UserService;
 
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("api/v1/user")
@@ -44,7 +36,6 @@ public class UserController {
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
     private final UserService userService;
-    private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtUtil jwtUtil;
     // ==============================
@@ -262,39 +253,28 @@ public class UserController {
                                     """))),
             @ApiResponse(responseCode = "404", description = "Пользователи не найдены"),
             @ApiResponse(responseCode = "403", description = "Пользователь не авторизован"),
-            @ApiResponse(responseCode = "500", description = "Ошибка при поиске пользователей",
-                    content = @Content(mediaType = "text/plain",
-                            examples = @ExampleObject(value = "Internal server error")))
+            @ApiResponse(responseCode = "400", description = "Некорректный запрос"),
+            @ApiResponse(responseCode = "500", description = "Ошибка при поиске пользователей")
     })
-    public ResponseEntity<?> getUser(
+    public ResponseEntity<SearchUsersResponse> getUser(
             @PathVariable String partitionUsername,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
         try {
-            Pageable pageable = PageRequest.of(page, size);
-            Page<User> usersPage = userRepository.findByUsernameStartingWithIgnoreCase(partitionUsername, pageable);
+            SearchUsersResponse response = userService.searchUsersByUsernamePrefix(partitionUsername, page, size);
 
-            List<UserDto> users = usersPage
-                    .getContent()
-                    .stream()
-                    .map(u -> new UserDto(u.getId(), u.getUsername()))
-                    .collect(Collectors.toList());
-
-            if (users.isEmpty()) {
+            if (response.getUsers().isEmpty()) {
                 return ResponseEntity.notFound().build();
             }
 
-            Map<String, Object> response = new HashMap<>();
-            response.put("users", users);
-            response.put("currentPage", usersPage.getNumber());
-            response.put("totalItems", usersPage.getTotalElements());
-            response.put("totalPages", usersPage.getTotalPages());
-
             return ResponseEntity.ok(response);
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(null); // или кастомный error
         } catch (Exception e) {
-            logger.error("Error while searching users", e);
-            return ResponseEntity.status(500).body("Internal server error");
+            log.error("Error while searching users by prefix: {}", partitionUsername, e);
+            return ResponseEntity.status(500).body(null);
         }
     }
 }

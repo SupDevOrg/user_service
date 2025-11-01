@@ -1,25 +1,49 @@
 spring:
   application:
-    name: user service
+    name: user-service
+
   datasource:
     url: jdbc:postgresql://postgres:5432/userDB
-    username: admin
-    password: admin123
+    username: ${DB_USERNAME:admin}
+    password: ${DB_PASSWORD:admin123}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      connection-timeout: 5000
 
+  cache:
+    type: redis
+    redis:
+      time-to-live: 600000
+      key-prefix: user-search
+
+  data:
+    redis:
+      host: redis
+      port: 6379
+      timeout: 2s
+      connect-timeout: 1s
+      client-type: lettuce
+      lettuce:
+        pool:
+          enabled: true
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: 1s
 
 jwt:
-  secret: ${JWT_SECRET:change_me_in_prod}
-  access-expiration-ms: 900000   # 15 min
-  refresh-expiration-ms: 2592000000  # 30 days
+  secret: ${JWT_SECRET}
+  access-expiration-ms: ${JWT_ACCESS_EXP_MS:900000}
+  refresh-expiration-ms: ${JWT_REFRESH_EXP_MS:2592000000}
 
 management:
   server:
-    port: 8081  # отдельный порт для актуатора
+    port: ${MANAGEMENT_PORT:8081}
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics
   endpoint:
     health:
-      show-details: always  # показывать детали всегда, без авторизации
+      show-details: when_authorized

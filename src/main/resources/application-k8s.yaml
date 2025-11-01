@@ -1,24 +1,58 @@
 spring:
   application:
     name: user-service
+
   datasource:
-    url: ${DB_URL:jdbc:postgresql://postgres:5432/userDB}
-    username: ${DB_USERNAME:admin}
-    password: ${DB_PASSWORD:admin123}
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 15
+      connection-timeout: 5000
+      idle-timeout: 300000
+
+  cache:
+    type: redis
+    redis:
+      time-to-live: 600000
+      key-prefix: user-search
+
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2s
+      connect-timeout: 1s
+      client-type: lettuce
+      lettuce:
+        pool:
+          enabled: true
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
+          max-wait: 1s
 
 jwt:
-  secret: ${JWT_SECRET:change_me_in_prod}
-  access-expiration-ms: ${JWT_ACCESS_EXP_MS:900000}   # 15 min
-  refresh-expiration-ms: ${JWT_REFRESH_EXP_MS:2592000000}  # 30 days
+  secret: ${JWT_SECRET}
+  access-expiration-ms: ${JWT_ACCESS_EXP_MS:900000}
+  refresh-expiration-ms: ${JWT_REFRESH_EXP_MS:2592000000}
 
 management:
   server:
-    port: ${MANAGEMENT_PORT:8081}  # отдельный порт для актуатора
+    port: ${MANAGEMENT_PORT:8081}
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics,prometheus
   endpoint:
     health:
-      show-details: always
+      show-details: when_authorized
+    prometheus:
+      access: unrestricted
+
+logging:
+  level:
+    root: INFO
+    ru.sup.userservice: INFO
