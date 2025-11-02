@@ -13,12 +13,20 @@ spring:
       idle-timeout: 300000
 
   jpa:
-    show-sql: false  # Отключаем дублирование SQL в консоль
+    hibernate:
+      ddl-auto: validate  # В K8s лучше validate + Liquibase
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        jdbc:
+          lob:
+            non_contextual_creation: true
 
   cache:
     type: redis
     redis:
-      time-to-live: 600000
+      time-to-live: ${CACHE_TTL:600000}  # 10 минут по умолчанию
       key-prefix: user-service
 
   data:
@@ -37,10 +45,38 @@ spring:
           min-idle: 2
           max-wait: 1s
 
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+    client-id: user-service-${random.uuid}
+
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      retries: 3
+      properties:
+        enable.idempotence: true
+        retry.backoff.ms: 100
+
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP:user-service-group}
+      auto-offset-reset: latest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      max-poll-records: 100
+      properties:
+        fetch.min.bytes: 1
+        fetch.max.wait.ms: 500
+        session.timeout.ms: 30000
+        heartbeat.interval.ms: 3000
+        allow.auto.create.topics: false
+
+
 jwt:
   secret: ${JWT_SECRET}
-  access-expiration-ms: ${JWT_ACCESS_EXP_MS:900000}
-  refresh-expiration-ms: ${JWT_REFRESH_EXP_MS:2592000000}
+  access-expiration-ms: ${JWT_ACCESS_EXP_MS:900000}     # 15 мин
+  refresh-expiration-ms: ${JWT_REFRESH_EXP_MS:2592000000} # 30 дней
 
 management:
   server:
@@ -57,7 +93,11 @@ management:
 
 logging:
   level:
-    root: INFO
-    ru.sup.userservice: INFO
-    org.hibernate.SQL: WARN                    # Отключаем SQL-запросы
-    org.hibernate.type.descriptor.sql: WARN    # Отключаем bind-параметры
+    root: ${LOG_LEVEL:INFO}
+    ru.sup.userservice: ${LOG_LEVEL_APP:INFO}
+    org.springframework.kafka: WARN
+    org.apache.kafka: WARN
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql: WARN
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"

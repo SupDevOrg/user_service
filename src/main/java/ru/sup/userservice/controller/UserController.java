@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -22,11 +23,13 @@ import ru.sup.userservice.dto.response.AuthResponse;
 import ru.sup.userservice.dto.response.SearchUsersResponse;
 import ru.sup.userservice.entity.RefreshToken;
 import ru.sup.userservice.entity.User;
+import ru.sup.userservice.kafka.UserEventProducer;
 import ru.sup.userservice.repository.RefreshTokenRepository;
 import ru.sup.userservice.security.jwt.JwtUtil;
 import ru.sup.userservice.service.UserService;
 
 import java.time.Instant;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("api/v1/user")
@@ -40,6 +43,7 @@ public class UserController {
     private final UserService userService;
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtUtil jwtUtil;
+    private final UserEventProducer userEventProducer;
 
     // ==============================
     //        REGISTER
@@ -66,11 +70,19 @@ public class UserController {
                             examples = @ExampleObject(value = "Registration failed")))
     })
     @PostMapping("/register")
+    @Transactional
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
         try {
             logger.info("Register user with username: {}", request.getUsername());
             AuthResponse response = userService.register(request);
-            return ResponseEntity.ok(response);
+            Optional<User> user = userService.findByUsername(request.getUsername());
+            if(user.isPresent()){
+                userEventProducer.sendUserCreated(user.get().getId(), user.get().getUsername());
+                return ResponseEntity.ok(response);
+            }else {
+                logger.error("Error during user registration");
+                return ResponseEntity.status(500).body("Registration failed");
+            }
         } catch (IllegalArgumentException e) {
             logger.error("Username is already in use", e);
             return ResponseEntity.status(409).body("Username is already in use");
@@ -169,12 +181,15 @@ public class UserController {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         boolean changed = false;
+        boolean changedUserName = false;
+        String oldUserName = user.getUsername();
 
         // ✅ обновляем логин, если передан
         if (request.getUsername() != null && !request.getUsername().isBlank()
                 && !request.getUsername().equals(user.getUsername())) {
             user.setUsername(request.getUsername());
             changed = true;
+            changedUserName = true;
         }
 
         // ✅ обновляем пароль, если передан
@@ -185,11 +200,14 @@ public class UserController {
 
         if (!changed) {
             return ResponseEntity.badRequest()
-                    .body(new AuthResponse("Нет изменений", null));
+                    .body(new AuthResponse("No changes", null));
         }
 
         // ⚙️ обновляем пользователя через сервис
         AuthResponse response = userService.update(user);
+        if (changedUserName){
+            userEventProducer.sendUserUpdated(user.getId(),"username", oldUserName, user.getUsername());
+        }
         return ResponseEntity.ok(response);
     }
 

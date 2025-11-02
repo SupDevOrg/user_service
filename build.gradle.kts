@@ -49,6 +49,10 @@ dependencies {
     // Для кэширования (включает @Cacheable)
     implementation("org.springframework.boot:spring-boot-starter-cache")
 
+    // === KAFKA ===
+    implementation("org.springframework.boot:spring-boot-starter-integration")
+    implementation("org.springframework.kafka:spring-kafka")
+
     // Тесты
     testImplementation("org.springframework.security:spring-security-test")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
@@ -56,6 +60,7 @@ dependencies {
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
     testImplementation("org.testcontainers:redis")
+    testImplementation("org.testcontainers:kafka") // Для тестирования с Kafka через Testcontainers
 
     // Lombok
     compileOnly("org.projectlombok:lombok")
