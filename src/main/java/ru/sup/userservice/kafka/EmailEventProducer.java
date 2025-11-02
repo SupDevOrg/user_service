@@ -26,7 +26,7 @@ public class EmailEventProducer {
 
     // === Методы отправки ===
     public void sendEmailCode(String email, String code) {
-        EmailCode event = new EmailCode(email, email);
+        EmailCode event = new EmailCode(email, code);
         sendEvent(event);
     }
 
