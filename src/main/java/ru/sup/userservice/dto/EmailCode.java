@@ -2,13 +2,13 @@ package ru.sup.userservice.dto;
 
 public record EmailCode(
         String email,
-        String code
+        String code,
+        long timestamp
 ) {
     public EmailCode(
             String email,
             String code
     ){
-        this.email = email;
-        this.code = code;
+      this(email, code, System.currentTimeMillis());
     }
 }
