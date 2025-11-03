@@ -11,3 +11,7 @@ databaseChangeLog:
       file: db/migration/005-add-email-verification-field-to-users.yaml
   - include:
       file: db/migration/006-add-index-users-table.yaml
+  - include:
+      file: db/migration/007-create-verification-code-table.yaml
+  - include:
+      file: db/migration/008-rename-emailVerification-to-email_verification.yaml

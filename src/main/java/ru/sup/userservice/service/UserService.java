@@ -20,9 +20,13 @@ import ru.sup.userservice.dto.response.AuthResponse;
 import ru.sup.userservice.dto.response.SearchUsersResponse;
 import ru.sup.userservice.entity.RefreshToken;
 import ru.sup.userservice.entity.User;
+import ru.sup.userservice.entity.VerificationCode;
+import ru.sup.userservice.kafka.EmailEventProducer;
 import ru.sup.userservice.repository.RefreshTokenRepository;
 import ru.sup.userservice.repository.UserRepository;
+import ru.sup.userservice.repository.VerificationCodeRepository;
 import ru.sup.userservice.security.jwt.JwtUtil;
+import ru.sup.userservice.util.CodeUtil;
 
 import java.time.Instant;
 import java.util.List;
@@ -37,7 +41,9 @@ public class UserService {
     private final AuthenticationManager authManager;
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final VerificationCodeRepository verificationCodeRepository;
     private final JwtUtil jwtUtil;
+    private final EmailEventProducer emailEventProducer;
 
     @Value("${jwt.refresh-expiration-ms}")
     private long refreshTokenExpirationMs;
@@ -122,19 +128,32 @@ public class UserService {
     }
 
     @Transactional
-    public AuthResponse update(User user) {
+    public AuthResponse update(User user, User newData) {
         log.info("Обновление пользователя: {}", user.getUsername());
 
         // если пароль не закодирован — кодируем
-        if (user.getPassword() != null && !user.getPassword().startsWith("$2a$")) {
+        if (newData.getPassword() != null && !newData.getPassword().startsWith("$2a$")) {
             log.info("Шифрование нового пароля для {}", user.getUsername());
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
+            newData.setPassword(passwordEncoder.encode(newData.getPassword()));
         }
 
         // сохраняем изменения
-        userRepository.save(user);
-        evictAllSearchCaches();
+        if(newData.getUsername() != null){
+            evictAllSearchCaches();
+            user.setUsername(newData.getUsername());
+        }
+        if(newData.getPassword() != null){
+            user.setPassword(newData.getPassword());
+        }
+        if(newData.getEmail() != null){
+            user.setEmail(newData.getEmail());
+            user.setEmailVerification(false);
+        }
+        if(newData.getPhone() != null){
+            user.setPhone(newData.getPhone());
+        }
 
+        userRepository.save(user);
         // инвалидируем старые refresh токены
         refreshTokenRepository.revokeAllByUser(user);
 
@@ -143,6 +162,23 @@ public class UserService {
         String accessToken = jwtUtil.generateAccessToken(userDetails);
         RefreshToken refreshToken = createAndSaveRefreshToken(user, userDetails);
 
+        if (newData.getEmail() != null) {
+            log.info("Изменение email для пользователя: {}", user.getUsername());
+
+            verificationCodeRepository.revokeAllVerificationCodes(user.getId());
+
+            String code = CodeUtil.generateCode();
+
+            VerificationCode verificationCode = new VerificationCode();
+            verificationCode.setUser(user);
+            verificationCode.setEmail(user.getEmail());
+            verificationCode.setCode(code);
+
+            verificationCodeRepository.save(verificationCode);
+
+            emailEventProducer.sendEmailCode(user.getId(), user.getEmail(), code, "update");
+        }
+
         return new AuthResponse(accessToken, refreshToken.getToken());
     }
 
@@ -150,9 +186,19 @@ public class UserService {
         userRepository.delete(user);
     }
 
+    @Transactional
     public int addEmail(User user, String email) {
         try{
             userRepository.addEmailForUser(user, email);
+            String code = CodeUtil.generateCode();
+
+            VerificationCode verificationCode = new VerificationCode();
+            verificationCode.setUser(user);
+            verificationCode.setEmail(email);
+            verificationCode.setCode(code);
+
+            verificationCodeRepository.save(verificationCode);
+            emailEventProducer.sendEmailCode(user.getId(), email, code, "register");
             return 0;
         } catch (Exception e){
             log.error("Exception while adding email for user: {}, message: {}", user.getUsername(), e.getMessage());
@@ -229,5 +275,20 @@ public class UserService {
     }
 
 
-
+    public int verifyEmail(User user, String code) {
+        Optional<VerificationCode> verificationCode = verificationCodeRepository.findActiveByUserId(user.getId());
+        if(verificationCode.isPresent()){
+            log.info("VerificationCode for user found");
+            if (code.equals(verificationCode.get().getCode())){
+                user.setEmailVerification(true);
+                verificationCode.get().setRevoked(true);
+                verificationCodeRepository.save(verificationCode.get());
+                userRepository.save(user);
+                return 0;
+            } else return 1;
+        } else {
+            log.warn("VerificationCode for user not found");
+            return 2;
+        }
+    }
 }
