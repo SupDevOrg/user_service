@@ -149,6 +149,18 @@ public class UserService {
         String accessToken = jwtUtil.generateAccessToken(userDetails);
         RefreshToken refreshToken = createAndSaveRefreshToken(user, userDetails);
 
+        if(user.getEmail() != null){
+            String code = CodeUtil.generateCode();
+
+            VerificationCode verificationCode = new VerificationCode();
+            verificationCode.setUser_id(user.getId());
+            verificationCode.setEmail(user.getEmail());
+            verificationCode.setCode(code);
+
+            verificationCodeRepository.save(verificationCode);
+            emailEventProducer.sendEmailCode(user.getEmail(), code);
+        }
+
         return new AuthResponse(accessToken, refreshToken.getToken());
     }
 

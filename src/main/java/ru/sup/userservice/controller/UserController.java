@@ -198,6 +198,18 @@ public class UserController {
             changed = true;
         }
 
+        // ✅ обновляем email, если передан
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            user.setEmail(request.getEmail());
+            changed = true;
+        }
+
+        // ✅ обновляем phone, если передан
+        if (request.getPhone() != null && !request.getPhone().isBlank()) {
+            user.setPhone(request.getPhone());
+            changed = true;
+        }
+
         if (!changed) {
             return ResponseEntity.badRequest()
                     .body(new AuthResponse("No changes", null));
