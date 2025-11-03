@@ -1,0 +1,39 @@
+databaseChangeLog:
+  - changeSet:
+      id: 007
+      author: SecurityTrip
+      changes:
+        - createTable:
+            tableName: verification_code
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: email
+                  type: varchar(255)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: code
+                  type: varchar(6)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: revoked
+                  type: boolean
+                  constraints:
+                    nullable: false
+                    defaultValueBoolean: false
+
+      rollback:
+        - dropTable:
+            tableName: verification_code

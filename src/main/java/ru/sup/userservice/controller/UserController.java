@@ -142,7 +142,7 @@ public class UserController {
             @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера"),
     })
     @DeleteMapping("/delete")
-    private ResponseEntity<?> delete(Authentication authentication){
+    public ResponseEntity<?> delete(Authentication authentication){
         try {
             String currentUsername = authentication.getName();
             User user = userService.findByUsername(currentUsername)
@@ -274,7 +274,7 @@ public class UserController {
             @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера"),
     })
     @PostMapping("/addEmail")
-    private ResponseEntity<?> addEmail(@RequestBody AddEmailRequest request,
+    public ResponseEntity<?> addEmail(@RequestBody AddEmailRequest request,
                                        Authentication authentication){
         try {
             String currentUsername = authentication.getName();
@@ -308,7 +308,7 @@ public class UserController {
             @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера"),
     })
     @PostMapping("/addPhone")
-    private ResponseEntity<?> addPhone(@RequestBody AddPhoneRequest request,
+    public ResponseEntity<?> addPhone(@RequestBody AddPhoneRequest request,
                                        Authentication authentication){
         try {
             String currentUsername = authentication.getName();

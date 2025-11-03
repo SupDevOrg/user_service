@@ -20,9 +20,13 @@ import ru.sup.userservice.dto.response.AuthResponse;
 import ru.sup.userservice.dto.response.SearchUsersResponse;
 import ru.sup.userservice.entity.RefreshToken;
 import ru.sup.userservice.entity.User;
+import ru.sup.userservice.entity.VerificationCode;
+import ru.sup.userservice.kafka.EmailEventProducer;
 import ru.sup.userservice.repository.RefreshTokenRepository;
 import ru.sup.userservice.repository.UserRepository;
+import ru.sup.userservice.repository.VerificationCodeRepository;
 import ru.sup.userservice.security.jwt.JwtUtil;
+import ru.sup.userservice.util.CodeUtil;
 
 import java.time.Instant;
 import java.util.List;
@@ -37,7 +41,9 @@ public class UserService {
     private final AuthenticationManager authManager;
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final VerificationCodeRepository verificationCodeRepository;
     private final JwtUtil jwtUtil;
+    private final EmailEventProducer emailEventProducer;
 
     @Value("${jwt.refresh-expiration-ms}")
     private long refreshTokenExpirationMs;
@@ -150,9 +156,19 @@ public class UserService {
         userRepository.delete(user);
     }
 
+    @Transactional
     public int addEmail(User user, String email) {
         try{
             userRepository.addEmailForUser(user, email);
+            String code = CodeUtil.generateCode();
+
+            VerificationCode verificationCode = new VerificationCode();
+            verificationCode.setUser_id(user.getId());
+            verificationCode.setEmail(email);
+            verificationCode.setCode(code);
+
+            verificationCodeRepository.save(verificationCode);
+            emailEventProducer.sendEmailCode(email, code);
             return 0;
         } catch (Exception e){
             log.error("Exception while adding email for user: {}, message: {}", user.getUsername(), e.getMessage());
