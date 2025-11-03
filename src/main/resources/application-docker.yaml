@@ -11,6 +11,17 @@ spring:
       maximum-pool-size: 10
       connection-timeout: 5000
 
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          lob:
+            non_contextual_creation: true
+
   cache:
     type: redis
     redis:

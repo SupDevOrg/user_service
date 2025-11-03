@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 008
+      author: SecurityTrip
+      changes:
+        - renameColumn:
+            tableName: users
+            oldColumnName: emailVerification
+            newColumnName: email_verification
+            columnDataType: boolean
+
+      rollback:
+        - renameColumn:
+            tableName: users
+            oldColumnName: email_verification
+            newColumnName: emailVerification
+            columnDataType: boolean

@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 public class EmailEventProducer {
 
     private static final Logger log = LoggerFactory.getLogger(EmailEventProducer.class);
-    private static final String TOPIC = "email-events";
+    private static final String TOPIC = "email-auth-codes";
 
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
@@ -25,8 +25,8 @@ public class EmailEventProducer {
     }
 
     // === Методы отправки ===
-    public void sendEmailCode(String email, String code) {
-        EmailCode event = new EmailCode(email, code);
+    public void sendEmailCode(Long userID, String email, String code, String type) {
+        EmailCode event = new EmailCode(userID, email, code, type);
         sendEvent(event);
     }
 

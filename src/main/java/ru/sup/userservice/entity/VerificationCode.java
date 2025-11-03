@@ -14,7 +14,9 @@ public class VerificationCode {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    private Long user_id;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     private String email;
 

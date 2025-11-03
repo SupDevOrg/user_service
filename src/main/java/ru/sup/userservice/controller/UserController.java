@@ -180,6 +180,7 @@ public class UserController {
         User user = userService.findByUsername(currentUsername)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
+        User newData = new User();
         boolean changed = false;
         boolean changedUserName = false;
         String oldUserName = user.getUsername();
@@ -187,26 +188,26 @@ public class UserController {
         // ✅ обновляем логин, если передан
         if (request.getUsername() != null && !request.getUsername().isBlank()
                 && !request.getUsername().equals(user.getUsername())) {
-            user.setUsername(request.getUsername());
+            newData.setUsername(request.getUsername());
             changed = true;
             changedUserName = true;
         }
 
         // ✅ обновляем пароль, если передан
         if (request.getPassword() != null && !request.getPassword().isBlank()) {
-            user.setPassword(request.getPassword());
+            newData.setPassword(request.getPassword());
             changed = true;
         }
 
         // ✅ обновляем email, если передан
         if (request.getEmail() != null && !request.getEmail().isBlank()) {
-            user.setEmail(request.getEmail());
+            newData.setEmail(request.getEmail());
             changed = true;
         }
 
         // ✅ обновляем phone, если передан
         if (request.getPhone() != null && !request.getPhone().isBlank()) {
-            user.setPhone(request.getPhone());
+            newData.setPhone(request.getPhone());
             changed = true;
         }
 
@@ -216,7 +217,7 @@ public class UserController {
         }
 
         // ⚙️ обновляем пользователя через сервис
-        AuthResponse response = userService.update(user);
+        AuthResponse response = userService.update(user, newData);
         if (changedUserName){
             userEventProducer.sendUserUpdated(user.getId(),"username", oldUserName, user.getUsername());
         }
@@ -328,16 +329,48 @@ public class UserController {
                     .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
             int status = userService.addPhone(user, request.getPhone());
-            switch (status){
-                case 0:
-                    return ResponseEntity.ok().build();
-                case 1:
-                    return ResponseEntity.status(500).build();
+            if (status == 0) {
+                return ResponseEntity.ok().build();
             }
+            return ResponseEntity.status(500).build();
         } catch (UsernameNotFoundException e){
             return ResponseEntity.status(401).build();
         }
-        return ResponseEntity.status(500).build();
+    }
+
+    // ==============================
+    //         VERIFY EMAIL
+    // ==============================
+    @Operation(
+            summary = "Подтверждение Email",
+            description = "Подтверждает Email у пользователя.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Email подтвержден"),
+            @ApiResponse(responseCode = "406", description = "Код неверный"),
+            @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера"),
+    })
+    @PostMapping("/verifyEmail")
+    public ResponseEntity<?> verifyEmail(
+            @RequestBody VerificationEmailRequest request,
+            Authentication authentication
+    ){
+        try{
+            String currentUsername = authentication.getName();
+            User user = userService.findByUsername(currentUsername)
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+            int status = userService.verifyEmail(user, request.getCode());
+            log.info("Email verification with status: {}", status);
+            return switch (status) {
+                case 0 -> ResponseEntity.ok().build();
+                case 1 -> ResponseEntity.status(406).build();
+                default -> ResponseEntity.status(500).build();
+            };
+        } catch (Exception e){
+            return ResponseEntity.status(500).build();
+        }
     }
 
     // ==============================

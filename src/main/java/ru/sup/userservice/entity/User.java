@@ -21,5 +21,6 @@ public class User {
 
     private String phone;
 
-
+    @Column(name = "email_verification")  // ← важно!
+    private boolean emailVerification;
 }
