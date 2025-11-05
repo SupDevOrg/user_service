@@ -186,36 +186,6 @@ public class UserService {
         userRepository.delete(user);
     }
 
-    @Transactional
-    public int addEmail(User user, String email) {
-        try{
-            userRepository.addEmailForUser(user, email);
-            String code = CodeUtil.generateCode();
-
-            VerificationCode verificationCode = new VerificationCode();
-            verificationCode.setUser(user);
-            verificationCode.setEmail(email);
-            verificationCode.setCode(code);
-
-            verificationCodeRepository.save(verificationCode);
-            emailEventProducer.sendEmailCode(user.getId(), email, code, "register");
-            return 0;
-        } catch (Exception e){
-            log.error("Exception while adding email for user: {}, message: {}", user.getUsername(), e.getMessage());
-            return 1;
-        }
-    }
-
-    public int addPhone(User user, String phone) {
-        try{
-            userRepository.addPhoneForUser(user, phone);
-            return 0;
-        } catch (Exception e){
-            log.error("Exception while adding phone for user: {}, message: {}", user.getUsername(), e.getMessage());
-            return 1;
-        }
-    }
-
     @Cacheable(
             value = "user-search",
             key = "#prefix + ':' + #page + ':' + #size"
