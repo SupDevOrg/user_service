@@ -2,7 +2,7 @@ package ru.sup.userservice.util;
 
 import java.security.SecureRandom;
 
-public class CodeUtil {
+public class EmailVerificationCodeUtil {
     private static final SecureRandom secureRandom = new SecureRandom();
     private static final String ALPHANUM = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
