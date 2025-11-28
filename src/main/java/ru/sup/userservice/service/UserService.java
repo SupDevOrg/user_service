@@ -26,7 +26,7 @@ import ru.sup.userservice.repository.RefreshTokenRepository;
 import ru.sup.userservice.repository.UserRepository;
 import ru.sup.userservice.repository.VerificationCodeRepository;
 import ru.sup.userservice.security.jwt.JwtUtil;
-import ru.sup.userservice.util.CodeUtil;
+import ru.sup.userservice.util.EmailVerificationCodeUtil;
 
 import java.time.Instant;
 import java.util.List;
@@ -136,6 +136,7 @@ public class UserService {
             log.info("Шифрование нового пароля для {}", user.getUsername());
             newData.setPassword(passwordEncoder.encode(newData.getPassword()));
         }
+        String type = "update";
 
         // сохраняем изменения
         if(newData.getUsername() != null){
@@ -146,6 +147,9 @@ public class UserService {
             user.setPassword(newData.getPassword());
         }
         if(newData.getEmail() != null){
+            if(user.getEmail() == null){
+                type = "register";
+            }
             user.setEmail(newData.getEmail());
             user.setEmailVerification(false);
         }
@@ -167,7 +171,7 @@ public class UserService {
 
             verificationCodeRepository.revokeAllVerificationCodes(user.getId());
 
-            String code = CodeUtil.generateCode();
+            String code = EmailVerificationCodeUtil.generateCode();
 
             VerificationCode verificationCode = new VerificationCode();
             verificationCode.setUser(user);
@@ -176,7 +180,7 @@ public class UserService {
 
             verificationCodeRepository.save(verificationCode);
 
-            emailEventProducer.sendEmailCode(user.getId(), user.getEmail(), code, "update");
+            emailEventProducer.sendEmailCode(user.getId(), user.getEmail(), code, type);
         }
 
         return new AuthResponse(accessToken, refreshToken.getToken());
