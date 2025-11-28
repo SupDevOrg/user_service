@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
+import ru.sup.userservice.repository.UserRepository;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
@@ -17,33 +18,42 @@ public class JwtUtil {
     private final SecretKey key;
     private final long accessTokenExpirationMs;
     private final long refreshTokenExpirationMs;
+    private final UserRepository userRepository;
 
     public JwtUtil(
             @Value("${jwt.secret}") String secret,
             @Value("${jwt.access-expiration-ms}") long accessTokenExpirationMs,
-            @Value("${jwt.refresh-expiration-ms}") long refreshTokenExpirationMs
+            @Value("${jwt.refresh-expiration-ms}") long refreshTokenExpirationMs,
+            UserRepository userRepository
     ) {
         this.key = Keys.hmacShaKeyFor(secret.getBytes());
         this.accessTokenExpirationMs = accessTokenExpirationMs;
         this.refreshTokenExpirationMs = refreshTokenExpirationMs;
+        this.userRepository = userRepository;
     }
 
     /** Генерация Access-токена */
     public String generateAccessToken(UserDetails userDetails) {
-        return buildToken(userDetails.getUsername(), accessTokenExpirationMs);
+        if (userRepository.findByUsername(userDetails.getUsername()).isPresent()){
+            return buildToken(userDetails.getUsername(), userRepository.findByUsername(userDetails.getUsername()).get().getId(),  accessTokenExpirationMs);
+        } else return null;
+
     }
 
     /** Генерация Refresh-токена */
     public String generateRefreshToken(UserDetails userDetails) {
-        return buildToken(userDetails.getUsername(), refreshTokenExpirationMs);
+        if (userRepository.findByUsername(userDetails.getUsername()).isPresent()) {
+            return buildToken(userDetails.getUsername(), userRepository.findByUsername(userDetails.getUsername()).get().getId(), refreshTokenExpirationMs);
+        } else return null;
     }
 
     /** Вспомогательный метод */
-    private String buildToken(String username, long expiration) {
+    private String buildToken(String username, Long id, long expiration) {
         return Jwts.builder()
-                .setSubject(username)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + expiration))
+                .subject(username)
+                .claim("userId", id)
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(key, Jwts.SIG.HS256)
                 .compact();
     }
