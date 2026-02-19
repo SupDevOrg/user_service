@@ -15,3 +15,5 @@ databaseChangeLog:
       file: db/migration/007-create-verification-code-table.yaml
   - include:
       file: db/migration/008-rename-emailVerification-to-email_verification.yaml
+  - include:
+      file:  db/migration/009-add-avatar-url-field-to-users.yaml

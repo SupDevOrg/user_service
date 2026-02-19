@@ -16,4 +16,7 @@ public class UserDto {
 
     @JsonProperty("username")
     private String username;
+
+    @JsonProperty("avatarURL")
+    private String avatarURL;
 }

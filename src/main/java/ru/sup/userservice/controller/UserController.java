@@ -15,34 +15,26 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 import ru.sup.userservice.dto.request.*;
 import ru.sup.userservice.dto.response.AuthResponse;
-import ru.sup.userservice.dto.response.SearchUsersResponse;
-import ru.sup.userservice.entity.RefreshToken;
 import ru.sup.userservice.entity.User;
 import ru.sup.userservice.kafka.UserEventProducer;
-import ru.sup.userservice.repository.RefreshTokenRepository;
-import ru.sup.userservice.security.jwt.JwtUtil;
 import ru.sup.userservice.service.UserService;
 
-import java.time.Instant;
 import java.util.Optional;
 
 @RestController
 @RequestMapping("api/v1/user")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "User Controller", description = "Регистрация, логин и обновление токенов пользователей")
+@Tag(name = "User Controller", description = "Регистрация, логин и обновление данных пользователей")
 public class UserController {
 
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
     private final UserService userService;
-    private final RefreshTokenRepository refreshTokenRepository;
-    private final JwtUtil jwtUtil;
     private final UserEventProducer userEventProducer;
 
     // ==============================
@@ -224,161 +216,8 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
-    // ==============================
-    //        SEARCH USERS
-    // ==============================
-    @GetMapping("/{partitionUsername}")
-    @Operation(
-            summary = "Поиск пользователей по подстроке имени с пагинацией",
-            description = "Возвращает пользователей, чьи имена содержат указанную подстроку."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Пользователи найдены",
-                    content = @Content(mediaType = "application/json",
-                            examples = @ExampleObject(value = """
-                                    {
-                                      "users": [
-                                        {"id": 1, "username": "johndoe"},
-                                        {"id": 2, "username": "john_smith"}
-                                      ],
-                                      "currentPage": 0,
-                                      "totalItems": 2,
-                                      "totalPages": 1
-                                    }
-                                    """))),
-            @ApiResponse(responseCode = "404", description = "Пользователи не найдены"),
-            @ApiResponse(responseCode = "403", description = "Пользователь не авторизован"),
-            @ApiResponse(responseCode = "400", description = "Некорректный запрос"),
-            @ApiResponse(responseCode = "500", description = "Ошибка при поиске пользователей")
-    })
-    public ResponseEntity<SearchUsersResponse> getUser(
-            @PathVariable String partitionUsername,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
-        try {
-            SearchUsersResponse response = userService.searchUsersByUsernamePrefix(partitionUsername, page, size);
 
-            if (response.getUsers().isEmpty()) {
-                return ResponseEntity.notFound().build();
-            }
 
-            return ResponseEntity.ok(response);
 
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(null); // или кастомный error
-        } catch (Exception e) {
-            log.error("Error while searching users by prefix: {}", partitionUsername, e);
-            return ResponseEntity.status(500).body(null);
-        }
-    }
-
-    // ==============================
-    //         VERIFY EMAIL
-    // ==============================
-    @Operation(
-            summary = "Подтверждение Email",
-            description = "Подтверждает Email у пользователя.",
-            security = @SecurityRequirement(name = "bearerAuth")
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Email подтвержден"),
-            @ApiResponse(responseCode = "406", description = "Код неверный"),
-            @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера"),
-    })
-    @PostMapping("/verifyEmail")
-    public ResponseEntity<?> verifyEmail(
-            @RequestBody VerificationEmailRequest request,
-            Authentication authentication
-    ){
-        try{
-            String currentUsername = authentication.getName();
-            User user = userService.findByUsername(currentUsername)
-                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-
-            int status = userService.verifyEmail(user, request.getCode());
-            log.info("Email verification with status: {}", status);
-            return switch (status) {
-                case 0 -> ResponseEntity.ok().build();
-                case 1 -> ResponseEntity.status(406).build();
-                default -> ResponseEntity.status(500).build();
-            };
-        } catch (Exception e){
-            return ResponseEntity.status(500).build();
-        }
-    }
-
-    // ==============================
-    //        REFRESH TOKEN
-    // ==============================
-    @Operation(
-            summary = "Обновление access токена",
-            description = "Обновляет access токен по RefreshRequest.",
-            security = @SecurityRequirement(name = "bearerAuth")
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Новый access токен успешно сгенерирован",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = AuthResponse.class),
-                            examples = @ExampleObject(value = """
-                                    {
-                                      "accessToken": "eyJhbGciOiJIUzI1NiIs...",
-                                      "refreshToken": null
-                                    }
-                                    """))),
-            @ApiResponse(responseCode = "401", description = "Пользователь не авторизован или refresh токен не найден",
-                    content = @Content(mediaType = "text/plain",
-                            examples = @ExampleObject(value = "Unauthorized"))),
-            @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера",
-                    content = @Content(mediaType = "text/plain",
-                            examples = @ExampleObject(value = "Internal server error")))
-    })
-    @PostMapping("/refresh")
-    public AuthResponse refreshByToken(RefreshRequest request) {
-        try {
-            String refreshTokenValue = request.getRefreshToken();
-
-            if (refreshTokenValue == null || refreshTokenValue.isBlank()) {
-                throw new IllegalArgumentException("No refresh token found in request");
-            }
-
-            // Находим refresh-токен в БД
-            RefreshToken storedToken = refreshTokenRepository.findByToken(refreshTokenValue)
-                    .orElseThrow(() -> new IllegalArgumentException("Refresh token not found"));
-
-            // Проверяем, не был ли отозван токен
-            if (storedToken.isRevoked()) {
-                throw new IllegalArgumentException("Refresh token has been revoked");
-            }
-
-            // Проверяем срок действия токена
-            User user = storedToken.getUser();
-            UserDetails userDetails = userService.buildUserDetails(user);
-
-            if (storedToken.getExpiryDate().isAfter(Instant.now())) {
-                // Токен ещё жив — создаём новый access token, refresh остаётся прежним
-                String newAccessToken = jwtUtil.generateAccessToken(userDetails);
-                log.info("Обновлён access-токен по действующему refresh для пользователя {}", user.getUsername());
-                return new AuthResponse(newAccessToken, storedToken.getToken());
-            } else {
-                // Токен истёк — помечаем как revoked
-                storedToken.setRevoked(true);
-                refreshTokenRepository.save(storedToken);
-
-                // Создаём новый refresh-токен
-                RefreshToken newRefreshToken = userService.createAndSaveRefreshToken(user, userDetails);
-
-                // Создаём новый access-токен
-                String newAccessToken = jwtUtil.generateAccessToken(userDetails);
-
-                log.info("Refresh-токен обновлён для пользователя {}", user.getUsername());
-                return new AuthResponse(newAccessToken, newRefreshToken.getToken());
-            }
-
-        } catch (Exception e) {
-            log.error("Ошибка при обновлении токена", e);
-            throw new RuntimeException("Ошибка обновления токена", e);
-        }
-    }
 
 }

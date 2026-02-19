@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - changeSet:
+      id: 009
+      author: SecurityTrip
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: avatar_url
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: true
+                    unique: false
+
+      rollback:
+        - dropColumn:
+            tableName: users
+            columnName: avatar_url

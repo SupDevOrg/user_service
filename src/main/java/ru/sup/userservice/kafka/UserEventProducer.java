@@ -6,8 +6,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-import ru.sup.userservice.dto.UserCreatedEvent;
-import ru.sup.userservice.dto.UserUpdatedEvent;
+import ru.sup.userservice.dto.event.UserCreatedEvent;
+import ru.sup.userservice.dto.event.UserUpdatedEvent;
 
 import java.util.concurrent.TimeUnit;
 
