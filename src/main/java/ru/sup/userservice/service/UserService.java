@@ -204,7 +204,7 @@ public class UserService {
                 trimmed, PageRequest.of(page, size));
 
         List<UserDto> dtos = usersPage.getContent().stream()
-                .map(u -> new UserDto(u.getId(), u.getUsername()))
+                .map(u -> new UserDto(u.getId(), u.getUsername(), u.getAvatarURL()))
                 .toList();
 
         log.info("Cache MISS for search: prefix={}, page={}, size={}", trimmed, page, size);
