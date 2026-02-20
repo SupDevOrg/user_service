@@ -1,0 +1,38 @@
+databaseChangeLog:
+  - changeSet:
+      id: 013
+      author: SecurityTrip
+      comment: Добавляем внешние ключи на таблицу users
+
+      changes:
+        # Внешний ключ на requester (отправитель запроса)
+        - addForeignKeyConstraint:
+            baseTableName: friendships
+            baseColumnNames: requester_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_friendships_on_requester
+            onDelete: CASCADE
+            onUpdate: CASCADE
+
+        # Внешний ключ на addressee (получатель запроса)
+        - addForeignKeyConstraint:
+            baseTableName: friendships
+            baseColumnNames: addressee_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_friendships_on_addressee
+            onDelete: CASCADE
+            onUpdate: CASCADE
+
+      rollback:
+        - dropForeignKeyConstraint:
+            baseTableName: friendships
+            constraintName: fk_friendships_on_requester
+        - dropForeignKeyConstraint:
+            baseTableName: friendships
+            constraintName: fk_friendships_on_addressee
+
+      tags:
+        - friendship
+        - constraint

@@ -1,0 +1,60 @@
+databaseChangeLog:
+  - changeSet:
+      id: 010
+      author: SecurityTrip
+      comment: Создаём таблицу для хранения дружеских связей между пользователями
+
+      changes:
+        - createTable:
+            tableName: friendships
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_friendships
+                    nullable: false
+
+              - column:
+                  name: requester_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_friendships_on_requester
+                    references: users(id)
+
+              - column:
+                  name: addressee_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_friendships_on_addressee
+                    references: users(id)
+
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: created_at
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: updated_at
+                  type: DATETIME
+                  constraints:
+                    nullable: true
+
+      rollback:
+        - dropTable:
+            tableName: friendships
+
+      tags:
+        - friendship
+        - initial
