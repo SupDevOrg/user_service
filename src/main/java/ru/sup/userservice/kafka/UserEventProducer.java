@@ -2,8 +2,7 @@ package ru.sup.userservice.kafka;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import ru.sup.userservice.dto.event.UserCreatedEvent;
@@ -11,10 +10,10 @@ import ru.sup.userservice.dto.event.UserUpdatedEvent;
 
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 @Service
 public class UserEventProducer {
 
-    private static final Logger log = LoggerFactory.getLogger(UserEventProducer.class);
     private static final String TOPIC = "user-events";
 
     private final KafkaTemplate<String, String> kafkaTemplate;

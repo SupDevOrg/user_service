@@ -44,7 +44,10 @@ public class SecurityConfig {
             // User CRUD
             "/api/v1/user/login",
             "/api/v1/user/refresh*",
-            "/api/v1/user/register"
+            "/api/v1/user/register",
+
+            // Friends list
+            "/api/v1/users/*/friends"
 
     };
 

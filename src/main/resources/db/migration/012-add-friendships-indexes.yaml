@@ -1,0 +1,52 @@
+databaseChangeLog:
+  - changeSet:
+      id: 012
+      author: SecurityTrip
+      comment: Создаём индексы для оптимизации запросов дружбы
+
+      changes:
+        # Индекс для поиска входящих запросов (по получателю + статус)
+        - createIndex:
+            indexName: idx_friendships_addressee_status
+            tableName: friendships
+            unique: false
+            columns:
+              - column:
+                  name: addressee_id
+              - column:
+                  name: status
+
+        # Индекс для поиска исходящих запросов (по отправителю + статус)
+        - createIndex:
+            indexName: idx_friendships_requester_status
+            tableName: friendships
+            unique: false
+            columns:
+              - column:
+                  name: requester_id
+              - column:
+                  name: status
+
+        # Индекс для сортировки по времени создания
+        - createIndex:
+            indexName: idx_friendships_created
+            tableName: friendships
+            unique: false
+            columns:
+              - column:
+                  name: created_at
+
+      rollback:
+        - dropIndex:
+            indexName: idx_friendships_addressee_status
+            tableName: friendships
+        - dropIndex:
+            indexName: idx_friendships_requester_status
+            tableName: friendships
+        - dropIndex:
+            indexName: idx_friendships_created
+            tableName: friendships
+
+      tags:
+        - friendship
+        - performance

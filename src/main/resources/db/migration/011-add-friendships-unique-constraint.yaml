@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: 011
+      author: SecurityTrip
+      comment: Добавляем уникальное ограничение на пару пользователей (один запрос на пару)
+
+      changes:
+        - addUniqueConstraint:
+            tableName: friendships
+            columnNames: requester_id, addressee_id
+            constraintName: uk_friendships_requester_addressee
+
+      rollback:
+        - dropUniqueConstraint:
+            tableName: friendships
+            constraintName: uk_friendships_requester_addressee
+
+      tags:
+        - friendship
+        - constraint

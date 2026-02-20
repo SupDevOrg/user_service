@@ -16,4 +16,12 @@ databaseChangeLog:
   - include:
       file: db/migration/008-rename-emailVerification-to-email_verification.yaml
   - include:
-      file:  db/migration/009-add-avatar-url-field-to-users.yaml
+      file: db/migration/009-add-avatar-url-field-to-users.yaml
+  - include:
+      file: db/migration/010-create-friendships-table.yaml
+  - include:
+      file: db/migration/011-add-friendships-unique-constraint.yaml
+  - include:
+      file: db/migration/012-add-friendships-indexes.yaml
+#  - include:
+#      file: db/migration/013-add-friendships-foreign-keys.yaml
