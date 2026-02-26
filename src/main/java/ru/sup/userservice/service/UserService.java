@@ -248,7 +248,6 @@ public class UserService {
         return userRepository.findByUsername(username);
     }
 
-
     public int verifyEmail(User user, String code) {
         Optional<VerificationCode> verificationCode = verificationCodeRepository.findActiveByUserId(user.getId());
         if(verificationCode.isPresent()){
