@@ -30,7 +30,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/users")
+@RequestMapping("/api/v1/user")
 @RequiredArgsConstructor
 @Validated
 @Tag(name = "Friendship Management", description = "API для управления дружбой между пользователями")
