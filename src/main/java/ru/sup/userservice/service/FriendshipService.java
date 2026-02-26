@@ -101,6 +101,8 @@ public class FriendshipService {
 
         log.info("Friend request rejected: {} -/-> {}", userId, friendId);
         evictFriendCache(userId);
+
+        friendshipEventProducer.sendFriendRequestRejected(userId, friendId);
     }
 
     /**
