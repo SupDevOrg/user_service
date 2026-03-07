@@ -10,6 +10,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,7 @@ import ru.sup.userservice.entity.RefreshToken;
 import ru.sup.userservice.entity.User;
 import ru.sup.userservice.entity.VerificationCode;
 import ru.sup.userservice.kafka.EmailEventProducer;
+import ru.sup.userservice.repository.FriendshipRepository;
 import ru.sup.userservice.repository.RefreshTokenRepository;
 import ru.sup.userservice.repository.UserRepository;
 import ru.sup.userservice.repository.VerificationCodeRepository;
@@ -40,6 +43,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authManager;
     private final UserRepository userRepository;
+    private final FriendshipRepository friendshipRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final VerificationCodeRepository verificationCodeRepository;
     private final JwtUtil jwtUtil;
@@ -192,22 +196,50 @@ public class UserService {
 
     @Cacheable(
             value = "user-search",
-            key = "#prefix + ':' + #page + ':' + #size"
+            key = "#prefix + ':' + #page + ':' + #size + ':' + #currentUserId",
+            condition = "#currentUserId != null"
     )
-    public SearchUsersResponse searchUsersByUsernamePrefix(String prefix, int page, int size) {
+    public SearchUsersResponse searchUsersByUsernamePrefix(
+            String prefix,
+            int page,
+            int size) {
+
         String trimmed = prefix.trim();
         if (trimmed.isEmpty()) {
             throw new IllegalArgumentException("Search prefix cannot be empty");
         }
 
-        Page<User> usersPage = userRepository.findByUsernameStartingWithIgnoreCase(
-                trimmed, PageRequest.of(page, size));
+        // 1. Получаем Authentication из контекста
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        // 2. Достаем токен
+        String token = null;
+        if (authentication != null && authentication.getCredentials() instanceof String) {
+            token = (String) authentication.getCredentials();
+        }
+
+        // 3. Получаем ID из токена
+        Long currentUserId = (token != null) ? jwtUtil.extractId(token) : null;
+
+        log.info("Search: prefix={}, userId={}, tokenPresent={}",
+                trimmed, currentUserId, token != null);
+
+        // 4. Получаем друзей
+        List<Long> friendIds = (currentUserId != null)
+                ? friendshipRepository.findAcceptedFriendIds(currentUserId)
+                : List.of();
+
+        log.debug("FriendIds for user {}: {}", currentUserId, friendIds);
+
+        // 5. Запрос в БД
+        Page<User> usersPage = userRepository.findByUsernameStartingWithOrderByFriendPriority(
+                trimmed,
+                friendIds,
+                PageRequest.of(page, size));
 
         List<UserDto> dtos = usersPage.getContent().stream()
                 .map(u -> new UserDto(u.getId(), u.getUsername(), u.getAvatarURL()))
                 .toList();
-
-        log.info("Cache MISS for search: prefix={}, page={}, size={}", trimmed, page, size);
 
         return new SearchUsersResponse(
                 dtos,
