@@ -64,4 +64,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
         WHERE u.username LIKE CONCAT(:prefix, '%')
         """)
     List<UserDto> findUserDtoByUsernameStartingWith(@Param("prefix") String prefix);
+
+    @Query("SELECT u FROM User u " +
+            "WHERE LOWER(u.username) LIKE LOWER(CONCAT(:prefix, '%')) " +
+            "ORDER BY " +
+            "  CASE WHEN u.id IN :friendIds THEN 0 ELSE 1 END, " +
+            "  u.username")
+    Page<User> findByUsernameStartingWithOrderByFriendPriority(
+            String prefix,
+            List<Long> friendIds,
+            Pageable pageable);
 }

@@ -77,6 +77,11 @@ public class JwtUtil {
         return extractAllClaims(token).getSubject();
     }
 
+    /** Получение ID пользователя */
+    public Long extractId(String token) {
+        return extractAllClaims(token).get("userId", Long.class);
+    }
+
     /** Проверка токена */
     public boolean validateToken(String token, UserDetails userDetails) {
         try {
