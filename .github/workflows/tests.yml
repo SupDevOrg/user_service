@@ -23,7 +23,9 @@ jobs:
           cache: gradle
 
       - name: Run tests
-        run: ./gradlew test --no-daemon
+        run: |
+          chmod +x gradlew
+          ./gradlew test --no-daemon
         env:
           TESTCONTAINERS_RYUK_DISABLED: true
 
