@@ -16,6 +16,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
+import ru.sup.userservice.dto.UserDto;
 import ru.sup.userservice.dto.request.VerificationEmailRequest;
 import ru.sup.userservice.dto.response.SearchUsersResponse;
 import ru.sup.userservice.entity.User;
@@ -80,6 +81,25 @@ public class UtilsController {
             log.error("Error while searching users by prefix: {}", partitionUsername, e);
             return ResponseEntity.status(500).body(null);
         }
+    }
+
+    // ==============================
+    //        GET USER BY ID
+    // ==============================
+    @GetMapping("/id/{userId}")
+    @Operation(
+            summary = "Получить пользователя по ID",
+            description = "Возвращает username и avatarURL пользователя по его ID.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Пользователь найден"),
+            @ApiResponse(responseCode = "404", description = "Пользователь не найден")
+    })
+    public ResponseEntity<UserDto> getUserById(@PathVariable Long userId) {
+        return userService.getUserById(userId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     // ==============================
