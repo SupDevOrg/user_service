@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class FriendshipEventProducer {
 
-    private static final String TOPIC = "user-events";
+    private static final String TOPIC = "friendship-events";
 
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
