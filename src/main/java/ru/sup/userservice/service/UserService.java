@@ -196,7 +196,7 @@ public class UserService {
 
     @Cacheable(
             value = "user-search",
-            key = "#prefix + ':' + #page + ':' + #size + ':' + #currentUsername",
+            key = "#p0 + ':' + #p1 + ':' + #p2 + ':' + #p3",
             condition = "#currentUsername != null && #currentUsername != 'anonymousUser'"
     )
     public SearchUsersResponse searchUsersByUsernamePrefix(
