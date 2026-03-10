@@ -63,7 +63,7 @@ class UtilsControllerTest {
         UserDto dto = new UserDto(1L, "alice", null);
         SearchUsersResponse response = new SearchUsersResponse(List.of(dto), 0, 1, 1);
 
-        when(userService.searchUsersByUsernamePrefix("ali", 0, 10)).thenReturn(response);
+        when(userService.searchUsersByUsernamePrefix("ali", 0, 10, "user")).thenReturn(response);
 
         mockMvc.perform(get("/api/v1/user/ali")
                         .param("page", "0")
@@ -78,7 +78,7 @@ class UtilsControllerTest {
     void searchUsers_emptyResult_returns404() throws Exception {
         SearchUsersResponse emptyResponse = new SearchUsersResponse(List.of(), 0, 0, 0);
 
-        when(userService.searchUsersByUsernamePrefix("zzz", 0, 10)).thenReturn(emptyResponse);
+        when(userService.searchUsersByUsernamePrefix("zzz", 0, 10, "user")).thenReturn(emptyResponse);
 
         mockMvc.perform(get("/api/v1/user/zzz")
                         .param("page", "0")
@@ -89,7 +89,7 @@ class UtilsControllerTest {
     @Test
     @WithMockUser
     void searchUsers_emptyPrefix_returns400() throws Exception {
-        when(userService.searchUsersByUsernamePrefix(anyString(), anyInt(), anyInt()))
+        when(userService.searchUsersByUsernamePrefix(anyString(), anyInt(), anyInt(), anyString()))
                 .thenThrow(new IllegalArgumentException("prefix cannot be empty"));
 
         mockMvc.perform(get("/api/v1/user/ "))
@@ -99,7 +99,7 @@ class UtilsControllerTest {
     @Test
     @WithMockUser
     void searchUsers_serverError_returns500() throws Exception {
-        when(userService.searchUsersByUsernamePrefix(anyString(), anyInt(), anyInt()))
+        when(userService.searchUsersByUsernamePrefix(anyString(), anyInt(), anyInt(), anyString()))
                 .thenThrow(new RuntimeException("DB error"));
 
         mockMvc.perform(get("/api/v1/user/ali"))

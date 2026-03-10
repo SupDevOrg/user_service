@@ -8,10 +8,9 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -32,6 +31,7 @@ import ru.sup.userservice.security.jwt.JwtUtil;
 import ru.sup.userservice.util.EmailVerificationCodeUtil;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -196,43 +196,45 @@ public class UserService {
 
     @Cacheable(
             value = "user-search",
-            key = "#prefix + ':' + #page + ':' + #size + ':' + #currentUserId",
-            condition = "#currentUserId != null"
+            key = "#prefix + ':' + #page + ':' + #size + ':' + #currentUsername",
+            condition = "#currentUsername != null && #currentUsername != 'anonymousUser'"
     )
     public SearchUsersResponse searchUsersByUsernamePrefix(
             String prefix,
             int page,
-            int size) {
+            int size,
+            String currentUsername) {
 
         String trimmed = prefix.trim();
         if (trimmed.isEmpty()) {
             throw new IllegalArgumentException("Search prefix cannot be empty");
         }
 
-        // 1. Получаем Authentication из контекста
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        // 2. Достаем токен
-        String token = null;
-        if (authentication != null && authentication.getCredentials() instanceof String) {
-            token = (String) authentication.getCredentials();
+        Long currentUserId = null;
+        if (currentUsername != null
+            && !currentUsername.isBlank()
+            && !"anonymousUser".equalsIgnoreCase(currentUsername)) {
+            currentUserId = userRepository.findByUsername(currentUsername)
+                .map(User::getId)
+                .orElse(null);
         }
 
-        // 3. Получаем ID из токена
-        Long currentUserId = (token != null) ? jwtUtil.extractId(token) : null;
-
-        log.info("Search: prefix={}, userId={}, tokenPresent={}",
-                trimmed, currentUserId, token != null);
+        log.info("Search: prefix={}, user={}, userId={}",
+            trimmed, currentUsername, currentUserId);
 
         // 4. Получаем друзей
         List<Long> friendIds = (currentUserId != null)
                 ? friendshipRepository.findAcceptedFriendIds(currentUserId)
-                : List.of();
+            : Collections.emptyList();
 
         log.debug("FriendIds for user {}: {}", currentUserId, friendIds);
 
         // 5. Запрос в БД
-        Page<User> usersPage = userRepository.findByUsernameStartingWithOrderByFriendPriority(
+        Page<User> usersPage = friendIds.isEmpty()
+            ? userRepository.findByUsernameStartingWithIgnoreCase(
+                trimmed,
+                PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "username")))
+            : userRepository.findByUsernameStartingWithOrderByFriendPriority(
                 trimmed,
                 friendIds,
                 PageRequest.of(page, size));
