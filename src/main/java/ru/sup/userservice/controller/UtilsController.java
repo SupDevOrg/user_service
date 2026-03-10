@@ -13,7 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 import ru.sup.userservice.dto.UserDto;
@@ -64,10 +63,17 @@ public class UtilsController {
     public ResponseEntity<SearchUsersResponse> getUser(
             @PathVariable String partitionUsername,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+            Authentication authentication
     ) {
         try {
-            SearchUsersResponse response = userService.searchUsersByUsernamePrefix(partitionUsername, page, size);
+            String currentUsername = authentication != null ? authentication.getName() : null;
+            SearchUsersResponse response = userService.searchUsersByUsernamePrefix(
+                    partitionUsername,
+                    page,
+                    size,
+                    currentUsername
+            );
 
             if (response.getUsers().isEmpty()) {
                 return ResponseEntity.notFound().build();
