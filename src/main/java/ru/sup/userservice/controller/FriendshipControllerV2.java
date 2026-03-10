@@ -20,15 +20,16 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.*;
 import ru.sup.userservice.dto.FriendshipDto;
 import ru.sup.userservice.dto.FriendshipStatusDto;
 import ru.sup.userservice.dto.UserDto;
-import ru.sup.userservice.exception.BusinessException;
-import ru.sup.userservice.security.jwt.JwtUtil;
+import ru.sup.userservice.entity.User;
 import ru.sup.userservice.service.FriendshipService;
+import ru.sup.userservice.service.UserService;
 
 import java.util.List;
 
@@ -42,7 +43,7 @@ import java.util.List;
 public class FriendshipControllerV2 {
 
     private final FriendshipService friendshipService;
-    private final JwtUtil jwtUtil;
+        private final UserService userService;
 
     /**
      * Отправить запрос в друзья
@@ -306,10 +307,14 @@ public class FriendshipControllerV2 {
 
     private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !(authentication.getCredentials() instanceof String token)) {
-            throw new BusinessException("User is not authenticated");
+        if (authentication == null || authentication.getName() == null
+                || "anonymousUser".equalsIgnoreCase(authentication.getName())) {
+            throw new UsernameNotFoundException("User is not authenticated");
         }
-        return jwtUtil.extractId(token);
+
+        return userService.findByUsername(authentication.getName())
+                .map(User::getId)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
 
     private Pageable createPageable(Integer page, Integer size, String sort) {
