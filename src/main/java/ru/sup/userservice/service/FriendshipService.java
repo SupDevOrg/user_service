@@ -64,7 +64,7 @@ public class FriendshipService {
      * Принять запрос в друзья
      */
     @Transactional
-    @CacheEvict(value = "userFriends", key = "#userId")
+    @CacheEvict(value = "userFriends", key = "#p0")
     public FriendshipDto acceptFriendRequest(Long userId, Long friendId) {
         var friendship = friendshipRepository
                 .findByRequesterIdAndAddresseeId(friendId, userId)
@@ -88,7 +88,7 @@ public class FriendshipService {
      * Отклонить запрос в друзья
      */
     @Transactional
-    @CacheEvict(value = "userFriends", key = "#userId")
+    @CacheEvict(value = "userFriends", key = "#p0")
     public void rejectFriendRequest(Long userId, Long friendId) {
         var friendship = friendshipRepository
                 .findByRequesterIdAndAddresseeId(friendId, userId)
@@ -109,7 +109,7 @@ public class FriendshipService {
      * Отменить исходящий запрос
      */
     @Transactional
-    @CacheEvict(value = "userFriends", key = "#friendId")
+    @CacheEvict(value = "userFriends", key = "#p1")
     public void cancelFriendRequest(Long requesterId, Long addresseeId) {
         var friendship = friendshipRepository
                 .findByRequesterIdAndAddresseeId(requesterId, addresseeId)
@@ -128,8 +128,8 @@ public class FriendshipService {
      */
     @Transactional
     @Caching(evict = {
-            @CacheEvict(value = "userFriends", key = "#userId"),
-            @CacheEvict(value = "userFriends", key = "#friendId")
+            @CacheEvict(value = "userFriends", key = "#p0"),
+            @CacheEvict(value = "userFriends", key = "#p1")
     })
     public void removeFriend(Long userId, Long friendId) {
         var friendship = findActiveFriendship(userId, friendId)
@@ -150,8 +150,8 @@ public class FriendshipService {
      */
     @Transactional
     @Caching(evict = {
-            @CacheEvict(value = "userFriends", key = "#userId"),
-            @CacheEvict(value = "userFriends", key = "#friendId")
+            @CacheEvict(value = "userFriends", key = "#p0"),
+            @CacheEvict(value = "userFriends", key = "#p1")
     })
     public void blockUser(Long userId, Long targetId) {
         var friendship = findAnyFriendship(userId, targetId);
@@ -207,7 +207,7 @@ public class FriendshipService {
         return new PageImpl<>(pageContent, pageable, allFriends.size());
     }
 
-    @Cacheable(value = "userFriendsList", key = "#userId", unless = "#result.isEmpty()")
+    @Cacheable(value = "userFriendsList", key = "#p0", unless = "#result.isEmpty()")
     @Transactional(readOnly = true)
     public List<UserDto> getFriendsList(Long userId) {
         var friendIds = friendshipRepository.findAcceptedFriendIds(userId);
@@ -261,7 +261,7 @@ public class FriendshipService {
     /**
      * Являются ли пользователи друзьями
      */
-    @Cacheable(value = "friendshipCheck", key = "#user1 + '_' + #user2")
+    @Cacheable(value = "friendshipCheck", key = "#p0 + '_' + #p1")
     @Transactional(readOnly = true)
     public boolean areFriends(Long user1, Long user2) {
         return friendshipRepository.areFriends(user1, user2);
@@ -270,7 +270,7 @@ public class FriendshipService {
     /**
      * Получить количество друзей
      */
-    @Cacheable(value = "friendsCount", key = "#userId")
+    @Cacheable(value = "friendsCount", key = "#p0")
     @Transactional(readOnly = true)
     public long getFriendsCount(Long userId) {
         return friendshipRepository.countAcceptedFriends(userId);
