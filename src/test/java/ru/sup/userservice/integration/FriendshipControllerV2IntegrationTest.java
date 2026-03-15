@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
@@ -18,9 +17,6 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import ru.sup.userservice.entity.Friendship;
 import ru.sup.userservice.entity.User;
-import ru.sup.userservice.kafka.EmailEventProducer;
-import ru.sup.userservice.kafka.FriendshipEventProducer;
-import ru.sup.userservice.kafka.UserEventProducer;
 import ru.sup.userservice.repository.FriendshipRepository;
 import ru.sup.userservice.repository.UserRepository;
 
@@ -62,10 +58,6 @@ class FriendshipControllerV2IntegrationTest {
 
     @Autowired
     private FriendshipRepository friendshipRepository;
-
-    @MockBean EmailEventProducer emailEventProducer;
-    @MockBean UserEventProducer userEventProducer;
-    @MockBean FriendshipEventProducer friendshipEventProducer;
 
     private User alice;
     private User bob;

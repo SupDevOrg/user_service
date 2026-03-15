@@ -19,9 +19,6 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import ru.sup.userservice.entity.User;
 import ru.sup.userservice.entity.VerificationCode;
-import ru.sup.userservice.kafka.EmailEventProducer;
-import ru.sup.userservice.kafka.FriendshipEventProducer;
-import ru.sup.userservice.kafka.UserEventProducer;
 import ru.sup.userservice.repository.FriendshipRepository;
 import ru.sup.userservice.repository.RefreshTokenRepository;
 import ru.sup.userservice.repository.UserRepository;
@@ -74,9 +71,6 @@ class UtilsControllerIntegrationTest {
     private PasswordEncoder passwordEncoder;
 
     @MockBean AvatarStorageService avatarStorageService;
-    @MockBean EmailEventProducer emailEventProducer;
-    @MockBean FriendshipEventProducer friendshipEventProducer;
-    @MockBean UserEventProducer userEventProducer;
 
     private User alice;
     private User bob;

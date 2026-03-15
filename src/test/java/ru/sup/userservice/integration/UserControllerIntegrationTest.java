@@ -22,9 +22,6 @@ import ru.sup.userservice.dto.request.RegisterRequest;
 import ru.sup.userservice.dto.request.UpdateRequest;
 import ru.sup.userservice.dto.response.AvatarUploadUrlResponse;
 import ru.sup.userservice.entity.User;
-import ru.sup.userservice.kafka.EmailEventProducer;
-import ru.sup.userservice.kafka.FriendshipEventProducer;
-import ru.sup.userservice.kafka.UserEventProducer;
 import ru.sup.userservice.repository.FriendshipRepository;
 import ru.sup.userservice.repository.RefreshTokenRepository;
 import ru.sup.userservice.repository.UserRepository;
@@ -82,8 +79,6 @@ class UserControllerIntegrationTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    @MockBean EmailEventProducer emailEventProducer;
-    @MockBean FriendshipEventProducer friendshipEventProducer;
     @MockBean AvatarStorageService avatarStorageService;
 
     private User seededUser;

@@ -1,7 +1,6 @@
 package ru.sup.userservice.controller;
 
 
-import jakarta.annotation.security.PermitAll;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
