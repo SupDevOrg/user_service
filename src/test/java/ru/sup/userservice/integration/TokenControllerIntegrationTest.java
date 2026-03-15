@@ -100,7 +100,7 @@ class TokenControllerIntegrationTest {
     }
 
     @Test
-    void refresh_revokedToken_returns5xx() throws Exception {
+    void refresh_revokedToken_returns5xx() {
         RefreshToken refreshToken = RefreshToken.builder()
                 .token("revoked.refresh.token")
                 .user(user)
