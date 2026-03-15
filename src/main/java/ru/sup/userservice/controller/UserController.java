@@ -11,13 +11,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.*;
 import ru.sup.userservice.dto.request.*;
+import ru.sup.userservice.dto.response.AvatarAccessUrlResponse;
 import ru.sup.userservice.dto.response.AuthResponse;
 import ru.sup.userservice.dto.response.AvatarUploadUrlResponse;
 import ru.sup.userservice.entity.User;
@@ -34,7 +35,6 @@ import java.util.Optional;
 @Tag(name = "User Controller", description = "Регистрация, логин и обновление данных пользователей")
 public class UserController {
 
-    private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
     private final UserService userService;
     private final UserEventProducer userEventProducer;
@@ -68,21 +68,21 @@ public class UserController {
     @Transactional
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
         try {
-            logger.info("Register user with username: {}", request.getUsername());
+            log.info("Register user with username: {}", request.getUsername());
             AuthResponse response = userService.register(request);
             Optional<User> user = userService.findByUsername(request.getUsername());
             if(user.isPresent()){
                 userEventProducer.sendUserCreated(user.get().getId(), user.get().getUsername());
                 return ResponseEntity.ok(response);
             }else {
-                logger.error("Error during user registration");
+                log.error("Error during user registration");
                 return ResponseEntity.status(500).body("Registration failed");
             }
         } catch (IllegalArgumentException e) {
-            logger.error("Username is already in use", e);
+            log.error("Username is already in use", e);
             return ResponseEntity.status(409).body("Username is already in use");
         } catch (Exception e) {
-            logger.error("Error during user registration", e);
+            log.error("Error during user registration", e);
             return ResponseEntity.status(500).body("Registration failed");
         }
     }
@@ -114,11 +114,11 @@ public class UserController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         try {
-            logger.info("Login user with username: {}", request.getUsername());
+            log.info("Login user with username: {}", request.getUsername());
             AuthResponse response = userService.login(request);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            logger.error("Error during user login", e);
+            log.error("Error during user login", e);
             return ResponseEntity.status(401).body("Invalid username or password");
         }
     }
@@ -249,6 +249,31 @@ public class UserController {
         userEventProducer.sendUserUpdated(user.getId(), "avatarURL", oldAvatar, response.getAvatarUrl());
 
         return ResponseEntity.ok(response);
+        }
+
+        @Operation(
+            summary = "Создание URL для чтения аватарки",
+            description = "Возвращает краткоживущий presigned GET URL для приватной аватарки текущего пользователя",
+            security = @SecurityRequirement(name = "bearerAuth")
+        )
+        @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "URL для чтения успешно создан"),
+            @ApiResponse(responseCode = "401", description = "Пользователь не авторизован"),
+            @ApiResponse(responseCode = "404", description = "У пользователя нет аватарки")
+        })
+        @GetMapping("/avatar/access-url")
+        public ResponseEntity<AvatarAccessUrlResponse> createAvatarAccessUrl(Authentication authentication) {
+        String currentUsername = authentication.getName();
+        User user = userService.findByUsername(currentUsername)
+            .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        String avatarUrl = user.getAvatarURL();
+        if (avatarUrl == null || avatarUrl.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Avatar not found");
+        }
+
+        String accessUrl = avatarStorageService.createAvatarAccessUrl(avatarUrl);
+        return ResponseEntity.ok(new AvatarAccessUrlResponse(accessUrl, avatarStorageService.getDownloadUrlExpirySeconds()));
         }
 
 }

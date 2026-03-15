@@ -19,6 +19,7 @@ import ru.sup.userservice.entity.User;
 import ru.sup.userservice.security.CustomUserDetailsService;
 import ru.sup.userservice.security.jwt.JwtTokenFilter;
 import ru.sup.userservice.security.jwt.JwtUtil;
+import ru.sup.userservice.service.AvatarStorageService;
 import ru.sup.userservice.service.UserService;
 
 import java.util.List;
@@ -41,6 +42,7 @@ class UtilsControllerTest {
     @Autowired ObjectMapper objectMapper;
 
     @MockBean UserService userService;
+    @MockBean AvatarStorageService avatarStorageService;
     @MockBean JwtUtil jwtUtil;
     @MockBean CustomUserDetailsService customUserDetailsService;
     @MockBean JwtTokenFilter jwtTokenFilter;
@@ -120,11 +122,14 @@ class UtilsControllerTest {
         UserDto dto = new UserDto(1L, "alice", "https://cdn.example.com/avatar.jpg");
 
         when(userService.getUserById(1L)).thenReturn(Optional.of(dto));
+        when(avatarStorageService.createAvatarAccessUrl("https://cdn.example.com/avatar.jpg"))
+            .thenReturn("https://signed.example.com/avatar.jpg");
 
         mockMvc.perform(get("/api/v1/user/id/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("alice"))
-                .andExpect(jsonPath("$.id").value(1));
+            .andExpect(jsonPath("$.id").value(1))
+            .andExpect(jsonPath("$.avatarURL").value("https://signed.example.com/avatar.jpg"));
     }
 
     @Test

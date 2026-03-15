@@ -20,6 +20,7 @@ import ru.sup.userservice.dto.UserDto;
 import ru.sup.userservice.security.CustomUserDetailsService;
 import ru.sup.userservice.security.jwt.JwtTokenFilter;
 import ru.sup.userservice.security.jwt.JwtUtil;
+import ru.sup.userservice.service.AvatarStorageService;
 import ru.sup.userservice.service.FriendshipService;
 
 import java.time.LocalDateTime;
@@ -42,6 +43,7 @@ class FriendshipControllerTest {
     @Autowired ObjectMapper objectMapper;
 
     @MockBean FriendshipService friendshipService;
+        @MockBean AvatarStorageService avatarStorageService;
     @MockBean JwtUtil jwtUtil;
     @MockBean CustomUserDetailsService customUserDetailsService;
     @MockBean JwtTokenFilter jwtTokenFilter;
@@ -150,13 +152,16 @@ class FriendshipControllerTest {
     @Test
     @WithMockUser
     void getFriends_success_returns200WithPage() throws Exception {
-        UserDto dto = new UserDto(2L, "bob", null);
+        UserDto dto = new UserDto(2L, "bob", "https://cdn.example.com/avatar.jpg");
         when(friendshipService.getFriendsPage(eq(1L), any()))
                 .thenReturn(new PageImpl<>(List.of(dto), PageRequest.of(0, 20), 1));
+        when(avatarStorageService.createAvatarAccessUrl("https://cdn.example.com/avatar.jpg"))
+                .thenReturn("https://signed.example.com/avatar.jpg");
 
         mockMvc.perform(get("/api/v1/user/1/friends"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].username").value("bob"))
+                .andExpect(jsonPath("$.content[0].avatarURL").value("https://signed.example.com/avatar.jpg"))
                 .andExpect(jsonPath("$.totalElements").value(1));
     }
 

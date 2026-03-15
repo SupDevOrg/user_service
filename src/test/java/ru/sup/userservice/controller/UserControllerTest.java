@@ -312,4 +312,43 @@ class UserControllerTest {
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isForbidden());
         }
+
+    @Test
+    @WithMockUser(username = "alice")
+    void createAvatarAccessUrl_authenticated_returns200() throws Exception {
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("alice");
+        user.setAvatarURL("https://storage.example.com/avatars/avatars/1/new.jpg");
+
+        when(userService.findByUsername("alice")).thenReturn(Optional.of(user));
+        when(avatarStorageService.createAvatarAccessUrl("https://storage.example.com/avatars/avatars/1/new.jpg"))
+            .thenReturn("https://presigned.get.url");
+        when(avatarStorageService.getDownloadUrlExpirySeconds()).thenReturn(900);
+
+        mockMvc.perform(get("/api/v1/user/avatar/access-url").with(csrf()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.accessUrl").value("https://presigned.get.url"))
+            .andExpect(jsonPath("$.expiresInSeconds").value(900));
+    }
+
+    @Test
+    @WithMockUser(username = "alice")
+    void createAvatarAccessUrl_withoutAvatar_returns404() throws Exception {
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("alice");
+        user.setAvatarURL("   ");
+
+        when(userService.findByUsername("alice")).thenReturn(Optional.of(user));
+
+        mockMvc.perform(get("/api/v1/user/avatar/access-url").with(csrf()))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void createAvatarAccessUrl_unauthenticated_returns403() throws Exception {
+        mockMvc.perform(get("/api/v1/user/avatar/access-url").with(csrf()))
+            .andExpect(status().isForbidden());
+    }
 }

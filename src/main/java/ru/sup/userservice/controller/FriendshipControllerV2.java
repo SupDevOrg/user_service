@@ -28,6 +28,7 @@ import ru.sup.userservice.dto.FriendshipDto;
 import ru.sup.userservice.dto.FriendshipStatusDto;
 import ru.sup.userservice.dto.UserDto;
 import ru.sup.userservice.entity.User;
+import ru.sup.userservice.service.AvatarStorageService;
 import ru.sup.userservice.service.FriendshipService;
 import ru.sup.userservice.service.UserService;
 
@@ -44,6 +45,7 @@ public class FriendshipControllerV2 {
 
     private final FriendshipService friendshipService;
         private final UserService userService;
+        private final AvatarStorageService avatarStorageService;
 
     /**
      * Отправить запрос в друзья
@@ -221,7 +223,8 @@ public class FriendshipControllerV2 {
         Long userId = getCurrentUserId();
         Pageable pageable = createPageable(page, size, sort);
         var friends = friendshipService.getFriendsPage(userId, pageable);
-        return ResponseEntity.ok(friends);
+        Page<UserDto> response = friends.map(this::withPresignedAvatar);
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -328,5 +331,18 @@ public class FriendshipControllerV2 {
             }
         }
         return PageRequest.of(page, size);
+    }
+
+    private UserDto withPresignedAvatar(UserDto userDto) {
+        String avatarUrl = userDto.getAvatarURL();
+        if (avatarUrl == null || avatarUrl.isBlank()) {
+            return userDto;
+        }
+
+        return new UserDto(
+                userDto.getId(),
+                userDto.getUsername(),
+                avatarStorageService.createAvatarAccessUrl(avatarUrl)
+        );
     }
 }
