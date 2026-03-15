@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import ru.sup.userservice.dto.FriendshipDto;
 import ru.sup.userservice.dto.FriendshipStatusDto;
 import ru.sup.userservice.dto.UserDto;
+import ru.sup.userservice.service.AvatarStorageService;
 import ru.sup.userservice.service.FriendshipService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -38,6 +39,7 @@ import java.util.List;
 public class FriendshipController {
 
     private final FriendshipService friendshipService;
+        private final AvatarStorageService avatarStorageService;
 
     /**
      * Отправить запрос в друзья
@@ -287,7 +289,8 @@ public class FriendshipController {
         Pageable pageable = createPageable(page, size, sort);
         var friends = friendshipService.getFriendsPage(userId, pageable);
 
-        return ResponseEntity.ok(friends);
+        Page<UserDto> response = friends.map(this::withPresignedAvatar);
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -419,5 +422,18 @@ public class FriendshipController {
             }
         }
         return org.springframework.data.domain.PageRequest.of(page, size);
+    }
+
+    private UserDto withPresignedAvatar(UserDto userDto) {
+        String avatarUrl = userDto.getAvatarURL();
+        if (avatarUrl == null || avatarUrl.isBlank()) {
+            return userDto;
+        }
+
+        return new UserDto(
+                userDto.getId(),
+                userDto.getUsername(),
+                avatarStorageService.createAvatarAccessUrl(avatarUrl)
+        );
     }
 }

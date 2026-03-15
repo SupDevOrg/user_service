@@ -19,7 +19,10 @@ import ru.sup.userservice.dto.UserDto;
 import ru.sup.userservice.dto.request.VerificationEmailRequest;
 import ru.sup.userservice.dto.response.SearchUsersResponse;
 import ru.sup.userservice.entity.User;
+import ru.sup.userservice.service.AvatarStorageService;
 import ru.sup.userservice.service.UserService;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("api/v1/user")
@@ -30,7 +33,8 @@ public class UtilsController {
 
     private static final Logger logger = LoggerFactory.getLogger(UtilsController.class);
 
-    private final UserService userService;
+        private final UserService userService;
+        private final AvatarStorageService avatarStorageService;
 
 
     // ==============================
@@ -75,6 +79,17 @@ public class UtilsController {
                     currentUsername
             );
 
+            List<UserDto> usersWithAccessUrls = response.getUsers().stream()
+                    .map(this::withPresignedAvatar)
+                    .toList();
+
+            response = new SearchUsersResponse(
+                    usersWithAccessUrls,
+                    response.getCurrentPage(),
+                    response.getTotalItems(),
+                    response.getTotalPages()
+            );
+
             if (response.getUsers().isEmpty()) {
                 return ResponseEntity.notFound().build();
             }
@@ -104,9 +119,23 @@ public class UtilsController {
     })
     public ResponseEntity<UserDto> getUserById(@PathVariable Long userId) {
         return userService.getUserById(userId)
-                .map(ResponseEntity::ok)
+                                .map(this::withPresignedAvatar)
+                                .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
+
+        private UserDto withPresignedAvatar(UserDto userDto) {
+                String avatarUrl = userDto.getAvatarURL();
+                if (avatarUrl == null || avatarUrl.isBlank()) {
+                        return userDto;
+                }
+
+                return new UserDto(
+                                userDto.getId(),
+                                userDto.getUsername(),
+                                avatarStorageService.createAvatarAccessUrl(avatarUrl)
+                );
+        }
 
     // ==============================
     //         VERIFY EMAIL
