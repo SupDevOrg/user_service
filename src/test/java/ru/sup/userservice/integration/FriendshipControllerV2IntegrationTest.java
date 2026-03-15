@@ -20,6 +20,8 @@ import ru.sup.userservice.entity.User;
 import ru.sup.userservice.repository.FriendshipRepository;
 import ru.sup.userservice.repository.UserRepository;
 
+import java.time.LocalDateTime;
+
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -93,7 +95,7 @@ class FriendshipControllerV2IntegrationTest {
         mockMvc.perform(get("/api/v2/user/friends/{friendId}/status", bob.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("PENDING"))
-                .andExpect(jsonPath("$.outgoing").value(true));
+                .andExpect(jsonPath("$.outgoingRequest").value(true));
     }
 
     @Test
@@ -102,6 +104,7 @@ class FriendshipControllerV2IntegrationTest {
                 .requester(alice)
                 .addressee(bob)
                 .status(ru.sup.userservice.data.FriendshipStatus.PENDING)
+                .createdAt(LocalDateTime.now())
                 .build();
         friendshipRepository.save(friendship);
 

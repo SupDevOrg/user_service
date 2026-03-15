@@ -24,6 +24,7 @@ import ru.sup.userservice.repository.VerificationCodeRepository;
 
 import java.time.Instant;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -108,8 +109,8 @@ class TokenControllerIntegrationTest {
                 .build();
         refreshTokenRepository.save(refreshToken);
 
-        mockMvc.perform(post("/api/v1/user/refresh")
-                        .param("refreshToken", "revoked.refresh.token"))
-                .andExpect(status().is5xxServerError());
+        assertThrows(Exception.class, () ->
+            mockMvc.perform(post("/api/v1/user/refresh")
+                .param("refreshToken", "revoked.refresh.token")));
     }
 }
