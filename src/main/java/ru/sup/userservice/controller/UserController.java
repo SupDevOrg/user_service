@@ -13,11 +13,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.*;
 import ru.sup.userservice.dto.request.*;
+import ru.sup.userservice.dto.response.AvatarAccessUrlResponse;
 import ru.sup.userservice.dto.response.AuthResponse;
 import ru.sup.userservice.dto.response.AvatarUploadUrlResponse;
 import ru.sup.userservice.entity.User;
@@ -249,6 +252,31 @@ public class UserController {
         userEventProducer.sendUserUpdated(user.getId(), "avatarURL", oldAvatar, response.getAvatarUrl());
 
         return ResponseEntity.ok(response);
+        }
+
+        @Operation(
+            summary = "Создание URL для чтения аватарки",
+            description = "Возвращает краткоживущий presigned GET URL для приватной аватарки текущего пользователя",
+            security = @SecurityRequirement(name = "bearerAuth")
+        )
+        @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "URL для чтения успешно создан"),
+            @ApiResponse(responseCode = "401", description = "Пользователь не авторизован"),
+            @ApiResponse(responseCode = "404", description = "У пользователя нет аватарки")
+        })
+        @GetMapping("/avatar/access-url")
+        public ResponseEntity<AvatarAccessUrlResponse> createAvatarAccessUrl(Authentication authentication) {
+        String currentUsername = authentication.getName();
+        User user = userService.findByUsername(currentUsername)
+            .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        String avatarUrl = user.getAvatarURL();
+        if (avatarUrl == null || avatarUrl.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Avatar not found");
+        }
+
+        String accessUrl = avatarStorageService.createAvatarAccessUrl(avatarUrl);
+        return ResponseEntity.ok(new AvatarAccessUrlResponse(accessUrl, avatarStorageService.getDownloadUrlExpirySeconds()));
         }
 
 }

@@ -25,6 +25,7 @@ public class AvatarStorageService {
     private final String bucket;
     private final String publicBaseUrl;
     private final int uploadUrlExpirySeconds;
+    private final int downloadUrlExpirySeconds;
 
     public AvatarStorageService(
             @Value("${storage.s3.endpoint:${AWS_ENDPOINT_URL:http://localhost:9000}}") String endpoint,
@@ -33,7 +34,8 @@ public class AvatarStorageService {
             @Value("${storage.s3.bucket:${AWS_S3_BUCKET_NAME:avatars}}") String bucket,
             @Value("${storage.s3.region:${AWS_DEFAULT_REGION:us-east-1}}") String region,
             @Value("${storage.s3.public-base-url:${AWS_ENDPOINT_URL:http://localhost:9000}}") String publicBaseUrl,
-            @Value("${storage.s3.upload-url-expiry-seconds:900}") long uploadUrlExpirySeconds
+                @Value("${storage.s3.upload-url-expiry-seconds:900}") long uploadUrlExpirySeconds,
+                @Value("${storage.s3.download-url-expiry-seconds:900}") long downloadUrlExpirySeconds
     ) {
         this.minioClient = MinioClient.builder()
                 .endpoint(endpoint)
@@ -42,6 +44,7 @@ public class AvatarStorageService {
         this.bucket = bucket;
         this.publicBaseUrl = trimTrailingSlash(publicBaseUrl);
         this.uploadUrlExpirySeconds = normalizeExpiry(uploadUrlExpirySeconds);
+        this.downloadUrlExpirySeconds = normalizeExpiry(downloadUrlExpirySeconds);
         log.info("Avatar storage initialized: bucket={}, region={}", bucket, region);
     }
 
@@ -66,6 +69,28 @@ public class AvatarStorageService {
             log.error("Failed to create avatar upload URL for user {}", userId, e);
             throw new IllegalStateException("Cannot create upload URL", e);
         }
+    }
+
+    public String createAvatarAccessUrl(String avatarUrlOrObjectKey) {
+        String objectKey = extractObjectKey(avatarUrlOrObjectKey);
+
+        try {
+            return minioClient.getPresignedObjectUrl(
+                    GetPresignedObjectUrlArgs.builder()
+                            .method(Method.GET)
+                            .bucket(bucket)
+                            .object(objectKey)
+                            .expiry(downloadUrlExpirySeconds)
+                            .build()
+            );
+        } catch (Exception e) {
+            log.error("Failed to create avatar access URL for key {}", objectKey, e);
+            throw new IllegalStateException("Cannot create access URL", e);
+        }
+    }
+
+    public int getDownloadUrlExpirySeconds() {
+        return downloadUrlExpirySeconds;
     }
 
     private void ensureBucketExists() throws Exception {
@@ -134,6 +159,25 @@ public class AvatarStorageService {
     private int normalizeExpiry(long value) {
         long bounded = Math.max(MIN_EXPIRY_SECONDS, Math.min(MAX_EXPIRY_SECONDS, value));
         return Math.toIntExact(bounded);
+    }
+
+    private String extractObjectKey(String avatarUrlOrObjectKey) {
+        if (avatarUrlOrObjectKey == null || avatarUrlOrObjectKey.isBlank()) {
+            throw new IllegalArgumentException("Avatar URL is empty");
+        }
+
+        String normalized = avatarUrlOrObjectKey.trim();
+        String bucketMarker = "/" + bucket + "/";
+        int markerIndex = normalized.indexOf(bucketMarker);
+        if (markerIndex >= 0) {
+            return normalized.substring(markerIndex + bucketMarker.length());
+        }
+
+        if (normalized.startsWith("http://") || normalized.startsWith("https://")) {
+            throw new IllegalArgumentException("Avatar URL does not contain bucket segment");
+        }
+
+        return normalized;
     }
 
     private String trimTrailingSlash(String value) {
