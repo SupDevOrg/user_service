@@ -1,6 +1,5 @@
 package ru.sup.userservice.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -20,9 +19,7 @@ import ru.sup.userservice.dto.FriendshipDto;
 import ru.sup.userservice.dto.FriendshipStatusDto;
 import ru.sup.userservice.dto.UserDto;
 import ru.sup.userservice.entity.User;
-import ru.sup.userservice.security.CustomUserDetailsService;
 import ru.sup.userservice.security.jwt.JwtTokenFilter;
-import ru.sup.userservice.security.jwt.JwtUtil;
 import ru.sup.userservice.service.AvatarStorageService;
 import ru.sup.userservice.service.FriendshipService;
 import ru.sup.userservice.service.UserService;
@@ -51,13 +48,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class FriendshipControllerV2Test {
 
     @Autowired MockMvc mockMvc;
-    @Autowired ObjectMapper objectMapper;
 
     @MockBean FriendshipService friendshipService;
     @MockBean UserService userService;
     @MockBean AvatarStorageService avatarStorageService;
-    @MockBean JwtUtil jwtUtil;
-    @MockBean CustomUserDetailsService customUserDetailsService;
     @MockBean JwtTokenFilter jwtTokenFilter;
 
     @BeforeEach

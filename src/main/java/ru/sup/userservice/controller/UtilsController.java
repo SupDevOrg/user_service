@@ -31,9 +31,7 @@ import java.util.List;
 @Tag(name = "Utils Controller", description = "Поиск пользователей, подтверждение почты")
 public class UtilsController {
 
-    private static final Logger logger = LoggerFactory.getLogger(UtilsController.class);
-
-        private final UserService userService;
+    private final UserService userService;
         private final AvatarStorageService avatarStorageService;
 
 

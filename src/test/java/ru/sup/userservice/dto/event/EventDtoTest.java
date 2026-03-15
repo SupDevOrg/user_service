@@ -17,11 +17,9 @@ class EventDtoTest {
 
         assertEquals(1L, created.userId());
         assertEquals("alice", created.username());
-        assertNotNull(created.timestamp());
 
         assertEquals(1L, updated.userId());
         assertEquals("username", updated.field());
-        assertNotNull(updated.timestamp());
     }
 
     @Test

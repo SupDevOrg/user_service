@@ -33,7 +33,7 @@ class UserEventProducerTest {
     void sendUserCreated_success_sendsToKafka() throws Exception {
         when(objectMapper.writeValueAsString(any())).thenReturn("{}");
         when(kafkaTemplate.send(eq("user-events"), eq("user.created"), eq("{}")))
-                .thenReturn((CompletableFuture) CompletableFuture.completedFuture(null));
+                .thenReturn(CompletableFuture.completedFuture(null));
 
         producer.sendUserCreated(1L, "alice");
 

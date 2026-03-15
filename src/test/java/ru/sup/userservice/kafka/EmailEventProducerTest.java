@@ -33,7 +33,7 @@ class EmailEventProducerTest {
     void sendEmailCode_success_sendsToKafka() throws Exception {
         when(objectMapper.writeValueAsString(any())).thenReturn("{}");
         when(kafkaTemplate.send(eq("email-auth-codes"), eq("email.send_code"), eq("{}")))
-                .thenReturn((CompletableFuture) CompletableFuture.completedFuture(null));
+                .thenReturn(CompletableFuture.completedFuture(null));
 
         producer.sendEmailCode(1L, "alice@mail.com", "123456", "REGISTER");
 

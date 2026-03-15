@@ -33,7 +33,7 @@ class FriendshipEventProducerTest {
     void sendFriendRequestSent_success_sendsToKafka() throws Exception {
         when(objectMapper.writeValueAsString(any())).thenReturn("{}");
         when(kafkaTemplate.send(eq("friendship-events"), eq("friendship.request.sent"), eq("{}")))
-                .thenReturn((CompletableFuture) CompletableFuture.completedFuture(null));
+                .thenReturn(CompletableFuture.completedFuture(null));
 
         producer.sendFriendRequestSent(1L, 2L);
 
@@ -44,7 +44,7 @@ class FriendshipEventProducerTest {
     void sendFriendRequestAccepted_success_sendsToKafka() throws Exception {
         when(objectMapper.writeValueAsString(any())).thenReturn("{}");
         when(kafkaTemplate.send(eq("friendship-events"), eq("friendship.request.accepted"), eq("{}")))
-                .thenReturn((CompletableFuture) CompletableFuture.completedFuture(null));
+                .thenReturn(CompletableFuture.completedFuture(null));
 
         producer.sendFriendRequestAccepted(1L, 2L);
 
@@ -63,7 +63,7 @@ class FriendshipEventProducerTest {
     void sendFriendRequestCancelled_sendError_isSwallowed() throws Exception {
         when(objectMapper.writeValueAsString(any())).thenReturn("{}");
         when(kafkaTemplate.send(eq("friendship-events"), eq("friendship.request.cancelled"), eq("{}")))
-                .thenReturn((CompletableFuture) CompletableFuture.failedFuture(new RuntimeException("kafka down")));
+                .thenReturn(CompletableFuture.failedFuture(new RuntimeException("kafka down")));
 
         producer.sendFriendRequestCancelled(1L, 2L);
 
@@ -74,9 +74,9 @@ class FriendshipEventProducerTest {
     void sendFriendRemoved_andUserBlocked_success_sendsToKafka() throws Exception {
         when(objectMapper.writeValueAsString(any())).thenReturn("{}");
         when(kafkaTemplate.send(eq("friendship-events"), eq("friendship.removed"), eq("{}")))
-                .thenReturn((CompletableFuture) CompletableFuture.completedFuture(null));
+                .thenReturn(CompletableFuture.completedFuture(null));
         when(kafkaTemplate.send(eq("friendship-events"), eq("friendship.user.blocked"), eq("{}")))
-                .thenReturn((CompletableFuture) CompletableFuture.completedFuture(null));
+                .thenReturn(CompletableFuture.completedFuture(null));
 
         producer.sendFriendRemoved(1L, 2L);
         producer.sendUserBlocked(1L, 2L);

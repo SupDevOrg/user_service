@@ -20,9 +20,7 @@ import ru.sup.userservice.dto.response.AuthResponse;
 import ru.sup.userservice.dto.response.AvatarUploadUrlResponse;
 import ru.sup.userservice.entity.User;
 import ru.sup.userservice.kafka.UserEventProducer;
-import ru.sup.userservice.security.CustomUserDetailsService;
 import ru.sup.userservice.security.jwt.JwtTokenFilter;
-import ru.sup.userservice.security.jwt.JwtUtil;
 import ru.sup.userservice.service.AvatarStorageService;
 import ru.sup.userservice.service.UserService;
 
@@ -47,8 +45,6 @@ class UserControllerTest {
     @MockBean UserService userService;
     @MockBean UserEventProducer userEventProducer;
     @MockBean AvatarStorageService avatarStorageService;
-    @MockBean JwtUtil jwtUtil;
-    @MockBean CustomUserDetailsService customUserDetailsService;
     @MockBean JwtTokenFilter jwtTokenFilter;
 
     @BeforeEach
