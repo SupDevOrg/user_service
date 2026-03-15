@@ -2,6 +2,7 @@ plugins {
     java
     id("org.springframework.boot") version "3.5.6"
     id("io.spring.dependency-management") version "1.1.7"
+    jacoco
 }
 
 group = "ru.sup"
@@ -58,7 +59,7 @@ dependencies {
     implementation("org.springframework.kafka:spring-kafka")
 
     // S3-compatible object storage (MinIO)
-    implementation("io.minio:minio:8.5.11")
+    implementation("io.minio:minio:8.6.0")
 
     // Тесты
     testImplementation("org.springframework.security:spring-security-test")
@@ -78,4 +79,39 @@ dependencies {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+jacoco {
+    toolVersion = "0.8.12"
+}
+
+tasks.jacocoTestReport {
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+        csv.required.set(true)
+    }
+}
+
+tasks.register<JacocoReport>("jacocoUserControllerReport") {
+    executionData.setFrom(fileTree(layout.buildDirectory) {
+        include("jacoco/test.exec", "jacoco/*.exec")
+    })
+
+    classDirectories.setFrom(
+        fileTree(layout.buildDirectory.dir("classes/java/main")) {
+            include("ru/sup/userservice/controller/UserController.class")
+        }
+    )
+
+    sourceDirectories.setFrom(files("src/main/java"))
+
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+        csv.required.set(true)
+        html.outputLocation.set(layout.buildDirectory.dir("reports/jacoco/userController"))
+        xml.outputLocation.set(layout.buildDirectory.file("reports/jacoco/userController/jacoco.xml"))
+        csv.outputLocation.set(layout.buildDirectory.file("reports/jacoco/userController/jacoco.csv"))
+    }
 }
