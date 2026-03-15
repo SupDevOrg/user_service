@@ -15,12 +15,15 @@ import org.springframework.test.web.servlet.MockMvc;
 import ru.sup.userservice.dto.request.LoginRequest;
 import ru.sup.userservice.dto.request.RegisterRequest;
 import ru.sup.userservice.dto.request.UpdateRequest;
+import ru.sup.userservice.dto.request.AvatarUploadUrlRequest;
 import ru.sup.userservice.dto.response.AuthResponse;
+import ru.sup.userservice.dto.response.AvatarUploadUrlResponse;
 import ru.sup.userservice.entity.User;
 import ru.sup.userservice.kafka.UserEventProducer;
 import ru.sup.userservice.security.CustomUserDetailsService;
 import ru.sup.userservice.security.jwt.JwtTokenFilter;
 import ru.sup.userservice.security.jwt.JwtUtil;
+import ru.sup.userservice.service.AvatarStorageService;
 import ru.sup.userservice.service.UserService;
 
 import java.util.Optional;
@@ -43,6 +46,7 @@ class UserControllerTest {
 
     @MockBean UserService userService;
     @MockBean UserEventProducer userEventProducer;
+    @MockBean AvatarStorageService avatarStorageService;
     @MockBean JwtUtil jwtUtil;
     @MockBean CustomUserDetailsService customUserDetailsService;
     @MockBean JwtTokenFilter jwtTokenFilter;
@@ -263,4 +267,49 @@ class UserControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
     }
+
+        @Test
+        @WithMockUser(username = "alice")
+        void createAvatarUploadUrl_authenticated_returns200() throws Exception {
+        AvatarUploadUrlRequest request = new AvatarUploadUrlRequest();
+        request.setContentType("image/jpeg");
+        request.setFileName("avatar.jpg");
+
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("alice");
+        user.setAvatarURL("http://old/avatar.jpg");
+
+        AvatarUploadUrlResponse response = new AvatarUploadUrlResponse(
+            "https://presigned.put.url",
+            "http://localhost:9000/avatars/avatars/1/new.jpg",
+            "avatars/1/new.jpg",
+            900
+        );
+
+        when(userService.findByUsername("alice")).thenReturn(Optional.of(user));
+        when(avatarStorageService.createAvatarUploadUrl(eq(1L), eq("image/jpeg"), eq("avatar.jpg")))
+            .thenReturn(response);
+
+        mockMvc.perform(post("/api/v1/user/avatar/upload-url").with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.uploadUrl").value("https://presigned.put.url"))
+            .andExpect(jsonPath("$.avatarUrl").value("http://localhost:9000/avatars/avatars/1/new.jpg"));
+
+        verify(userService).updateAvatarUrl(user, "http://localhost:9000/avatars/avatars/1/new.jpg");
+        verify(userEventProducer).sendUserUpdated(1L, "avatarURL", "http://old/avatar.jpg", "http://localhost:9000/avatars/avatars/1/new.jpg");
+        }
+
+        @Test
+        void createAvatarUploadUrl_unauthenticated_returns403() throws Exception {
+        AvatarUploadUrlRequest request = new AvatarUploadUrlRequest();
+        request.setContentType("image/jpeg");
+
+        mockMvc.perform(post("/api/v1/user/avatar/upload-url").with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isForbidden());
+        }
 }

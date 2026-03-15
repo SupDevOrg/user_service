@@ -69,3 +69,13 @@ management:
   endpoint:
     health:
       show-details: when_authorized
+
+storage:
+  s3:
+    endpoint: ${AWS_ENDPOINT_URL:http://minio:9000}
+    access-key: ${AWS_ACCESS_KEY_ID:minioadmin}
+    secret-key: ${AWS_SECRET_ACCESS_KEY:minioadmin}
+    bucket: ${AWS_S3_BUCKET_NAME:avatars}
+    region: ${AWS_DEFAULT_REGION:us-east-1}
+    public-base-url: ${AWS_ENDPOINT_URL:http://localhost:9000}
+    upload-url-expiry-seconds: ${STORAGE_UPLOAD_URL_EXPIRY_SECONDS:900}

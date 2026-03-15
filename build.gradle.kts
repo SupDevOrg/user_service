@@ -57,6 +57,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-integration")
     implementation("org.springframework.kafka:spring-kafka")
 
+    // S3-compatible object storage (MinIO)
+    implementation("io.minio:minio:8.5.11")
+
     // Тесты
     testImplementation("org.springframework.security:spring-security-test")
     testImplementation("org.springframework.boot:spring-boot-starter-test")

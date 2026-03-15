@@ -78,6 +78,16 @@ jwt:
   access-expiration-ms: ${JWT_ACCESS_EXP_MS:900000}     # 15 мин
   refresh-expiration-ms: ${JWT_REFRESH_EXP_MS:2592000000} # 30 дней
 
+storage:
+  s3:
+    endpoint: ${AWS_ENDPOINT_URL}
+    access-key: ${AWS_ACCESS_KEY_ID}
+    secret-key: ${AWS_SECRET_ACCESS_KEY}
+    bucket: ${AWS_S3_BUCKET_NAME:avatars}
+    region: ${AWS_DEFAULT_REGION:us-east-1}
+    public-base-url: ${AWS_ENDPOINT_URL}
+    upload-url-expiry-seconds: ${STORAGE_UPLOAD_URL_EXPIRY_SECONDS:900}
+
 management:
   server:
     port: ${MANAGEMENT_PORT:8081}

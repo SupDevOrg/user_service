@@ -190,6 +190,13 @@ public class UserService {
         return new AuthResponse(accessToken, refreshToken.getToken());
     }
 
+    @Transactional
+    public void updateAvatarUrl(User user, String avatarUrl) {
+        user.setAvatarURL(avatarUrl);
+        userRepository.save(user);
+        evictAllSearchCaches();
+    }
+
     public void deleteUser(User user) {
         userRepository.delete(user);
     }
