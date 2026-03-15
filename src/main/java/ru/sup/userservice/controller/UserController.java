@@ -19,8 +19,10 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 import ru.sup.userservice.dto.request.*;
 import ru.sup.userservice.dto.response.AuthResponse;
+import ru.sup.userservice.dto.response.AvatarUploadUrlResponse;
 import ru.sup.userservice.entity.User;
 import ru.sup.userservice.kafka.UserEventProducer;
+import ru.sup.userservice.service.AvatarStorageService;
 import ru.sup.userservice.service.UserService;
 
 import java.util.Optional;
@@ -36,6 +38,7 @@ public class UserController {
 
     private final UserService userService;
     private final UserEventProducer userEventProducer;
+    private final AvatarStorageService avatarStorageService;
 
     // ==============================
     //        REGISTER
@@ -215,5 +218,37 @@ public class UserController {
         }
         return ResponseEntity.ok(response);
     }
+
+        @Operation(
+            summary = "Создание URL для загрузки аватарки",
+            description = "Возвращает presigned URL для загрузки в бакет и сохраняет публичный avatarURL в профиле",
+            security = @SecurityRequirement(name = "bearerAuth")
+        )
+        @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "URL для загрузки успешно создан"),
+            @ApiResponse(responseCode = "400", description = "Некорректные данные"),
+            @ApiResponse(responseCode = "401", description = "Пользователь не авторизован")
+        })
+        @PostMapping("/avatar/upload-url")
+        public ResponseEntity<AvatarUploadUrlResponse> createAvatarUploadUrl(
+            @RequestBody AvatarUploadUrlRequest request,
+            Authentication authentication
+        ) {
+        String currentUsername = authentication.getName();
+        User user = userService.findByUsername(currentUsername)
+            .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        String oldAvatar = user.getAvatarURL();
+        AvatarUploadUrlResponse response = avatarStorageService.createAvatarUploadUrl(
+            user.getId(),
+            request.getContentType(),
+            request.getFileName()
+        );
+
+        userService.updateAvatarUrl(user, response.getAvatarUrl());
+        userEventProducer.sendUserUpdated(user.getId(), "avatarURL", oldAvatar, response.getAvatarUrl());
+
+        return ResponseEntity.ok(response);
+        }
 
 }
