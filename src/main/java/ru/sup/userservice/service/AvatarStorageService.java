@@ -124,7 +124,8 @@ public class AvatarStorageService {
         String normalized = contentType.toLowerCase(Locale.ROOT).trim();
         if (!normalized.equals("image/jpeg")
                 && !normalized.equals("image/png")
-                && !normalized.equals("image/webp")) {
+                && !normalized.equals("image/webp")
+                && !normalized.equals("image/jpg")) {
             throw new IllegalArgumentException("Only image/jpeg, image/png, image/webp are allowed");
         }
         return normalized;
