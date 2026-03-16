@@ -1,7 +1,7 @@
 # ==============================
 # Stage 1: Build JAR
 # ==============================
-FROM eclipse-temurin:21-jdk AS builder
+FROM eclipse-temurin:25-jdk AS builder
 WORKDIR /app
 
 # Копируем скрипты и зависимости Gradle
@@ -18,7 +18,7 @@ RUN ./gradlew clean build -x test --no-daemon --parallel
 # ==============================
 # Stage 2: Final image (distroless)
 # ==============================
-FROM gcr.io/distroless/java21-debian12:nonroot
+FROM gcr.io/distroless/java25-debian12:nonroot
 WORKDIR /app
 
 # Копируем jar
