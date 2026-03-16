@@ -16,9 +16,9 @@ RUN ./gradlew clean build -x test --no-daemon --parallel
 
 
 # ==============================
-# Stage 2: Final image (distroless)
+# Stage 2: Final image (Java 25 runtime)
 # ==============================
-FROM gcr.io/distroless/java25-debian12:nonroot
+FROM eclipse-temurin:25-jre
 WORKDIR /app
 
 # Копируем jar
