@@ -18,7 +18,6 @@ import ru.sup.userservice.dto.response.SearchUsersResponse;
 import ru.sup.userservice.entity.User;
 import ru.sup.userservice.security.CustomUserDetailsService;
 import ru.sup.userservice.security.jwt.JwtTokenFilter;
-import ru.sup.userservice.security.jwt.JwtUtil;
 import ru.sup.userservice.service.AvatarStorageService;
 import ru.sup.userservice.service.UserService;
 
@@ -43,7 +42,6 @@ class UtilsControllerTest {
 
     @MockBean UserService userService;
     @MockBean AvatarStorageService avatarStorageService;
-    @MockBean JwtUtil jwtUtil;
     @MockBean CustomUserDetailsService customUserDetailsService;
     @MockBean JwtTokenFilter jwtTokenFilter;
 

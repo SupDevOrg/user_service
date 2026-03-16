@@ -5,6 +5,7 @@ import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.http.Method;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,7 @@ public class AvatarStorageService {
     private final String bucket;
     private final String publicBaseUrl;
     private final int uploadUrlExpirySeconds;
+    @Getter
     private final int downloadUrlExpirySeconds;
 
     public AvatarStorageService(
@@ -87,10 +89,6 @@ public class AvatarStorageService {
             log.error("Failed to create avatar access URL for key {}", objectKey, e);
             throw new IllegalStateException("Cannot create access URL", e);
         }
-    }
-
-    public int getDownloadUrlExpirySeconds() {
-        return downloadUrlExpirySeconds;
     }
 
     private void ensureBucketExists() throws Exception {

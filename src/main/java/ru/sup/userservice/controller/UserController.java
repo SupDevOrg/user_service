@@ -142,17 +142,12 @@ public class UserController {
             String currentUsername = authentication.getName();
             User user = userService.findByUsername(currentUsername)
                     .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-
-            if (user != null){
-                log.info("Deleting user {}", user.getUsername());
-                userService.deleteUser(user);
-                return ResponseEntity.ok().build();
-            }
+            log.info("Deleting user {}", user.getUsername());
+            userService.deleteUser(user);
+            return ResponseEntity.ok().build();
         } catch (UsernameNotFoundException e){
             return ResponseEntity.status(401).build();
         }
-        return ResponseEntity.status(500).build();
-
     }
 
     // ==============================

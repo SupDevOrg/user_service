@@ -30,7 +30,7 @@ class UserRepositoryTest {
 
     @Container
     @ServiceConnection
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15-alpine");
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17.0-alpine");
 
     @Autowired UserRepository userRepository;
     @Autowired TestEntityManager entityManager;

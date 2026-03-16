@@ -22,7 +22,6 @@ import ru.sup.userservice.entity.User;
 import ru.sup.userservice.kafka.UserEventProducer;
 import ru.sup.userservice.security.CustomUserDetailsService;
 import ru.sup.userservice.security.jwt.JwtTokenFilter;
-import ru.sup.userservice.security.jwt.JwtUtil;
 import ru.sup.userservice.service.AvatarStorageService;
 import ru.sup.userservice.service.UserService;
 
@@ -47,7 +46,6 @@ class UserControllerTest {
     @MockBean UserService userService;
     @MockBean UserEventProducer userEventProducer;
     @MockBean AvatarStorageService avatarStorageService;
-    @MockBean JwtUtil jwtUtil;
     @MockBean CustomUserDetailsService customUserDetailsService;
     @MockBean JwtTokenFilter jwtTokenFilter;
 
@@ -237,6 +235,27 @@ class UserControllerTest {
 
     @Test
     @WithMockUser(username = "alice")
+    void update_blankFields_returns400() throws Exception {
+        UpdateRequest request = new UpdateRequest();
+        request.setUsername("   ");
+        request.setPassword(" ");
+        request.setEmail("\t");
+        request.setPhone("  ");
+
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("alice");
+
+        when(userService.findByUsername("alice")).thenReturn(Optional.of(user));
+
+        mockMvc.perform(put("/api/v1/user/update").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(username = "alice")
     void update_sameUsername_noUsernameChange() throws Exception {
         UpdateRequest request = new UpdateRequest();
         request.setUsername("alice"); // same as current → not a change
@@ -255,6 +274,43 @@ class UserControllerTest {
                 .andExpect(status().isOk());
 
         verify(userEventProducer, never()).sendUserUpdated(any(), any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(username = "alice")
+    void update_withEmailAndPhone_returns200() throws Exception {
+        UpdateRequest request = new UpdateRequest();
+        request.setEmail("alice@example.com");
+        request.setPhone("+79998887766");
+
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("alice");
+
+        when(userService.findByUsername("alice")).thenReturn(Optional.of(user));
+        when(userService.update(any(), any())).thenReturn(new AuthResponse("new.access", "new.refresh"));
+
+        mockMvc.perform(put("/api/v1/user/update").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").value("new.access"));
+
+        verify(userEventProducer, never()).sendUserUpdated(any(), any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(username = "alice")
+    void update_userNotFound_returns403() throws Exception {
+        UpdateRequest request = new UpdateRequest();
+        request.setPassword("newPassword");
+
+        when(userService.findByUsername("alice")).thenReturn(Optional.empty());
+
+        mockMvc.perform(put("/api/v1/user/update").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -344,6 +400,44 @@ class UserControllerTest {
 
         mockMvc.perform(get("/api/v1/user/avatar/access-url").with(csrf()))
             .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(username = "alice")
+    void createAvatarAccessUrl_withNullAvatar_returns404() throws Exception {
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("alice");
+        user.setAvatarURL(null);
+
+        when(userService.findByUsername("alice")).thenReturn(Optional.of(user));
+
+        mockMvc.perform(get("/api/v1/user/avatar/access-url").with(csrf()))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(username = "alice")
+    void createAvatarUploadUrl_userNotFound_returns403() throws Exception {
+        AvatarUploadUrlRequest request = new AvatarUploadUrlRequest();
+        request.setContentType("image/jpeg");
+        request.setFileName("avatar.jpg");
+
+        when(userService.findByUsername("alice")).thenReturn(Optional.empty());
+
+        mockMvc.perform(post("/api/v1/user/avatar/upload-url").with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "alice")
+    void createAvatarAccessUrl_userNotFound_returns403() throws Exception {
+        when(userService.findByUsername("alice")).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/v1/user/avatar/access-url").with(csrf()))
+            .andExpect(status().isForbidden());
     }
 
     @Test
