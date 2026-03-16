@@ -29,20 +29,20 @@ jobs:
         env:
           TESTCONTAINERS_RYUK_DISABLED: true
 
-#      - name: Upload test results
-#        if: always()
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: test-results
-#          path: build/test-results/test/
-#          retention-days: 7
-#
-#      - name: Upload JaCoCo report
-#        if: always()
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: jacoco-report
-#          path: |
-#            build/reports/jacoco/test/jacocoTestReport.xml
-#            build/reports/jacoco/test/html/
-#          retention-days: 7
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: build/test-results/test/
+          retention-days: 7
+
+      - name: Upload JaCoCo report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: |
+            build/reports/jacoco/test/jacocoTestReport.xml
+            build/reports/jacoco/test/html/
+          retention-days: 7
