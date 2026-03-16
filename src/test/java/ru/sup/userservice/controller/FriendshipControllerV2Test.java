@@ -19,6 +19,7 @@ import ru.sup.userservice.dto.FriendshipDto;
 import ru.sup.userservice.dto.FriendshipStatusDto;
 import ru.sup.userservice.dto.UserDto;
 import ru.sup.userservice.entity.User;
+import ru.sup.userservice.security.CustomUserDetailsService;
 import ru.sup.userservice.security.jwt.JwtTokenFilter;
 import ru.sup.userservice.service.AvatarStorageService;
 import ru.sup.userservice.service.FriendshipService;
@@ -52,6 +53,7 @@ class FriendshipControllerV2Test {
     @MockBean FriendshipService friendshipService;
     @MockBean UserService userService;
     @MockBean AvatarStorageService avatarStorageService;
+        @MockBean CustomUserDetailsService customUserDetailsService;
     @MockBean JwtTokenFilter jwtTokenFilter;
 
     @BeforeEach
