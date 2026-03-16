@@ -65,9 +65,15 @@ dependencies {
     testImplementation("org.springframework.security:spring-security-test")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
-    testImplementation("org.testcontainers:junit-jupiter")
-    testImplementation("org.testcontainers:postgresql")
-    testImplementation("org.testcontainers:kafka") // Для тестирования с Kafka через Testcontainers
+
+    // Source: https://mvnrepository.com/artifact/org.testcontainers/testcontainers
+    testImplementation("org.testcontainers:testcontainers:2.0.3")
+    // Source: https://mvnrepository.com/artifact/org.testcontainers/junit-jupiter
+    testImplementation("org.testcontainers:junit-jupiter:1.21.4")
+    // Source: https://mvnrepository.com/artifact/org.testcontainers/testcontainers-postgresql
+    testImplementation("org.testcontainers:testcontainers-postgresql:2.0.3")
+    // Source: https://mvnrepository.com/artifact/org.testcontainers/testcontainers-kafka
+    testImplementation("org.testcontainers:testcontainers-kafka:2.0.3")
 
     // Lombok
     compileOnly("org.projectlombok:lombok")
