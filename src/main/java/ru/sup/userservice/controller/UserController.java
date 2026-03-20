@@ -21,6 +21,7 @@ import ru.sup.userservice.dto.request.*;
 import ru.sup.userservice.dto.response.AvatarAccessUrlResponse;
 import ru.sup.userservice.dto.response.AuthResponse;
 import ru.sup.userservice.dto.response.AvatarUploadUrlResponse;
+import ru.sup.userservice.dto.response.UserProfileResponse;
 import ru.sup.userservice.entity.User;
 import ru.sup.userservice.kafka.UserEventProducer;
 import ru.sup.userservice.service.AvatarStorageService;
@@ -270,5 +271,43 @@ public class UserController {
         String accessUrl = avatarStorageService.createAvatarAccessUrl(avatarUrl);
         return ResponseEntity.ok(new AvatarAccessUrlResponse(accessUrl, avatarStorageService.getDownloadUrlExpirySeconds()));
         }
+
+    // ==============================
+    //        GET MY PROFILE
+    // ==============================
+    @Operation(
+            summary = "Получить профиль текущего пользователя",
+            description = "Возвращает всю информацию о пользователе, отправившем запрос.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Профиль успешно получен",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = UserProfileResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Пользователь не авторизован"),
+            @ApiResponse(responseCode = "404", description = "Пользователь не найден")
+    })
+    @GetMapping("/me")
+    public ResponseEntity<UserProfileResponse> getMyProfile(Authentication authentication) {
+        String currentUsername = authentication.getName();
+        User user = userService.findByUsername(currentUsername)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        String avatarUrl = null;
+        if (user.getAvatarURL() != null && !user.getAvatarURL().isBlank()) {
+            avatarUrl = avatarStorageService.createAvatarAccessUrl(user.getAvatarURL());
+        }
+
+        UserProfileResponse profile = new UserProfileResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getPhone(),
+                user.isEmailVerification(),
+                avatarUrl
+        );
+
+        return ResponseEntity.ok(profile);
+    }
 
 }
