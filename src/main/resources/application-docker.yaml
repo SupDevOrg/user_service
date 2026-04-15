@@ -79,3 +79,8 @@ storage:
     region: ${AWS_DEFAULT_REGION:us-east-1}
     public-base-url: ${AWS_ENDPOINT_URL:http://localhost:9000}
     upload-url-expiry-seconds: ${STORAGE_UPLOAD_URL_EXPIRY_SECONDS:900}
+
+notification-service:
+  host: ${NOTIFICATION_SERVICE_HOST:notification-service}
+  port: ${NOTIFICATION_SERVICE_PORT:9090}
+  deadline-ms: ${NOTIFICATION_DEADLINE_MS:3000}

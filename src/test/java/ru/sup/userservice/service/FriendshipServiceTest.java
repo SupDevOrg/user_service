@@ -15,6 +15,7 @@ import ru.sup.userservice.entity.Friendship;
 import ru.sup.userservice.entity.User;
 import ru.sup.userservice.exception.BusinessException;
 import ru.sup.userservice.exception.NotFoundException;
+import ru.sup.userservice.grpc.NotificationGrpcClient;
 import ru.sup.userservice.kafka.FriendshipEventProducer;
 import ru.sup.userservice.repository.FriendshipRepository;
 import ru.sup.userservice.repository.UserRepository;
@@ -33,6 +34,7 @@ class FriendshipServiceTest {
     @Mock private FriendshipRepository friendshipRepository;
     @Mock private UserRepository userRepository;
     @Mock private FriendshipEventProducer friendshipEventProducer;
+    @Mock private NotificationGrpcClient notificationGrpcClient;
 
     @InjectMocks
     private FriendshipService friendshipService;

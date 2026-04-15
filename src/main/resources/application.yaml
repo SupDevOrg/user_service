@@ -88,3 +88,8 @@ logging:
     ru.sup.userservice: DEBUG
     org.springframework.cache: TRACE
     org.springframework.data.redis: DEBUG
+
+notification-service:
+  host: ${NOTIFICATION_SERVICE_HOST:localhost}
+  port: ${NOTIFICATION_SERVICE_PORT:9090}
+  deadline-ms: 3000

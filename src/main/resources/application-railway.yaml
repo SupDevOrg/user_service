@@ -101,6 +101,11 @@ management:
     prometheus:
       access: unrestricted
 
+notification-service:
+  host: ${NOTIFICATION_SERVICE_HOST}
+  port: ${NOTIFICATION_SERVICE_PORT:9090}
+  deadline-ms: ${NOTIFICATION_DEADLINE_MS:3000}
+
 logging:
   level:
     root: ${LOG_LEVEL:INFO}

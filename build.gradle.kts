@@ -2,12 +2,16 @@ plugins {
     java
     id("org.springframework.boot") version "3.5.6"
     id("io.spring.dependency-management") version "1.1.7"
+    id("com.google.protobuf") version "0.9.4"
     jacoco
 }
 
 group = "ru.sup"
 version = "0.0.1-SNAPSHOT"
 description = "User service"
+
+val grpcVersion = "1.68.1"
+val protobufVersion = "4.29.1"
 
 java {
     toolchain {
@@ -61,6 +65,14 @@ dependencies {
     // S3-compatible object storage (MinIO)
     implementation("io.minio:minio:8.6.0")
 
+    // gRPC
+    implementation("io.grpc:grpc-netty-shaded:$grpcVersion")
+    implementation("io.grpc:grpc-protobuf:$grpcVersion")
+    implementation("io.grpc:grpc-stub:$grpcVersion")
+    implementation("com.google.protobuf:protobuf-java:$protobufVersion")
+    // Required for @javax.annotation.Generated used by protoc-gen-grpc-java on Java 9+
+    compileOnly("javax.annotation:javax.annotation-api:1.3.2")
+
     // Тесты
     testImplementation("org.springframework.security:spring-security-test")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
@@ -96,6 +108,27 @@ tasks.jacocoTestReport {
         xml.required.set(true)
         html.required.set(true)
         csv.required.set(true)
+    }
+}
+
+protobuf {
+    protoc { artifact = "com.google.protobuf:protoc:$protobufVersion" }
+    plugins {
+        create("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:$grpcVersion" }
+    }
+    generateProtoTasks {
+        all().forEach { task -> task.plugins { create("grpc") } }
+    }
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs(
+                "build/generated/source/proto/main/java",
+                "build/generated/source/proto/main/grpc"
+            )
+        }
     }
 }
 
