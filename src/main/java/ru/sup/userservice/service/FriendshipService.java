@@ -9,6 +9,7 @@ import ru.sup.userservice.entity.Friendship;
 import ru.sup.userservice.data.FriendshipStatus;
 import ru.sup.userservice.exception.BusinessException;
 import ru.sup.userservice.exception.NotFoundException;
+import ru.sup.userservice.grpc.NotificationGrpcClient;
 import ru.sup.userservice.kafka.FriendshipEventProducer;
 import ru.sup.userservice.repository.FriendshipRepository;
 import ru.sup.userservice.repository.UserRepository;
@@ -34,6 +35,7 @@ public class FriendshipService {
     private final FriendshipRepository friendshipRepository;
     private final UserRepository userRepository;
     private final FriendshipEventProducer friendshipEventProducer;
+    private final NotificationGrpcClient notificationGrpcClient;
 
     /**
      * Отправить запрос в друзья
@@ -55,6 +57,7 @@ public class FriendshipService {
         log.info("Friend request sent: {} -> {}", requesterId, addresseeId);
 
         friendshipEventProducer.sendFriendRequestSent(requesterId, addresseeId);
+        notificationGrpcClient.notifyFriendRequestReceived(addresseeId, requesterId);
         evictFriendCache(addresseeId);
 
         return FriendshipDto.from(saved);
@@ -78,6 +81,7 @@ public class FriendshipService {
         log.info("Friend request accepted: {} <-> {}", userId, friendId);
 
         friendshipEventProducer.sendFriendRequestAccepted(friendId, userId);
+        notificationGrpcClient.notifyFriendRequestAccepted(friendId, userId);
         evictFriendCache(userId);
         evictFriendCache(friendId);
 
@@ -103,6 +107,8 @@ public class FriendshipService {
         evictFriendCache(userId);
 
         friendshipEventProducer.sendFriendRequestRejected(userId, friendId);
+        // optional: notify requester of rejection
+        notificationGrpcClient.notifyFriendRequestRejected(friendId, userId);
     }
 
     /**

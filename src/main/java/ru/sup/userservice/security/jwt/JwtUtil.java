@@ -38,7 +38,6 @@ public class JwtUtil {
             return buildToken(
                     userDetails.getUsername(),
                     userRepository.findByUsername(userDetails.getUsername()).get().getId(),
-                    userRepository.findByUsername(userDetails.getUsername()).get().getAvatarURL(),
                     accessTokenExpirationMs);
         } else return null;
 
@@ -50,24 +49,17 @@ public class JwtUtil {
             return buildToken(
                     userDetails.getUsername(),
                     userRepository.findByUsername(userDetails.getUsername()).get().getId(),
-                    null,
                     refreshTokenExpirationMs);
         } else return null;
     }
 
     /** Вспомогательный метод */
-    private String buildToken(String username, Long id, String avatarURL, long expiration) {
-        JwtBuilder builder = Jwts.builder()
+    private String buildToken(String username, Long id, long expiration) {
+        return Jwts.builder()
                 .subject(username)
                 .claim("userId", id)
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + expiration));
-
-        if (avatarURL != null && !avatarURL.isBlank()) {
-            builder.claim("avatarURL", avatarURL);
-        }
-
-        return builder
+                .expiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(key, Jwts.SIG.HS256)
                 .compact();
     }
