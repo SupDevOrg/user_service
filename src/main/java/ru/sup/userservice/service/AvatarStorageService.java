@@ -5,6 +5,7 @@ import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.http.Method;
+import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,6 +15,7 @@ import ru.sup.userservice.dto.response.AvatarUploadUrlResponse;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
 @Slf4j
@@ -28,6 +30,7 @@ public class AvatarStorageService {
     private final int uploadUrlExpirySeconds;
     @Getter
     private final int downloadUrlExpirySeconds;
+    private final AtomicBoolean bucketReady = new AtomicBoolean(false);
 
     public AvatarStorageService(
             @Value("${storage.s3.endpoint:${AWS_ENDPOINT_URL:http://localhost:9000}}") String endpoint,
@@ -50,12 +53,26 @@ public class AvatarStorageService {
         log.info("Avatar storage initialized: bucket={}, region={}", bucket, region);
     }
 
+    @PostConstruct
+    public void initBucket() {
+        try {
+            ensureBucketExists();
+            bucketReady.set(true);
+            log.info("Bucket '{}' is ready", bucket);
+        } catch (Exception e) {
+            log.warn("Could not verify bucket '{}' on startup: {}", bucket, e.getMessage());
+        }
+    }
+
     public AvatarUploadUrlResponse createAvatarUploadUrl(Long userId, String contentType, String fileName) {
         String normalizedContentType = normalizeContentType(contentType);
         String objectKey = buildObjectKey(userId, normalizedContentType, fileName);
 
         try {
-            ensureBucketExists();
+            if (!bucketReady.get()) {
+                ensureBucketExists();
+                bucketReady.set(true);
+            }
             String uploadUrl = minioClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .method(Method.PUT)

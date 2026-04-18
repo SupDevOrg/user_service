@@ -25,6 +25,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     boolean existsById(@NonNull Long id);
 
+    @Query("SELECT COUNT(u) FROM User u WHERE u.id IN :ids")
+    long countByIdIn(@Param("ids") List<Long> ids);
+
     /**
      * Получить список пользователей по ID (для друзей)
      */

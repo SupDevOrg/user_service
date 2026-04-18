@@ -23,9 +23,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -202,15 +204,13 @@ public class FriendshipService {
      */
     @Transactional(readOnly = true)
     public Page<UserDto> getFriendsPage(Long userId, Pageable pageable) {
-        // Получаем полный список из кэша (или БД)
-        var allFriends = getFriendsList(userId);
-
-        // Применяем пагинацию в памяти (дешево для разумного числа друзей)
-        int start = (int) pageable.getOffset();
-        int end = Math.min(start + pageable.getPageSize(), allFriends.size());
-
-        var pageContent = allFriends.subList(start, end);
-        return new PageImpl<>(pageContent, pageable, allFriends.size());
+        List<Long> pagedIds = friendshipRepository.findAcceptedFriendIdsPaged(userId, pageable);
+        long total = getFriendsCount(userId);
+        if (pagedIds.isEmpty()) {
+            return new PageImpl<>(List.of(), pageable, total);
+        }
+        List<UserDto> users = userRepository.findUserDtoByIds(pagedIds);
+        return new PageImpl<>(users, pageable, total);
     }
 
     @Cacheable(value = "userFriendsList", key = "#p0", unless = "#result.isEmpty()")
@@ -285,10 +285,15 @@ public class FriendshipService {
     // ==================== PRIVATE HELPERS ====================
 
     private void validateUsersExist(Long... userIds) {
-        for (Long id : userIds) {
-            if (!userRepository.existsById(id)) {
-                throw new NotFoundException("User not found: " + id);
-            }
+        List<Long> ids = List.of(userIds);
+        long found = userRepository.countByIdIn(ids);
+        if (found < ids.size()) {
+            Set<Long> foundIds = new HashSet<>(userRepository.findAllById(ids)
+                    .stream().map(u -> u.getId()).toList());
+            ids.stream()
+               .filter(id -> !foundIds.contains(id))
+               .findFirst()
+               .ifPresent(id -> { throw new NotFoundException("User not found: " + id); });
         }
     }
 
