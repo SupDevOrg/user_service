@@ -41,8 +41,10 @@ public class JwtTokenFilter extends OncePerRequestFilter {
             try {
                 username = jwtUtil.extractUsername(token);
             } catch (Exception e) {
-                // ignore
+                log.warn("Failed to extract username from JWT [{}]: {}", request.getRequestURI(), e.getMessage());
             }
+        } else {
+            log.debug("No Bearer token in request to {}", request.getRequestURI());
         }
 
         // Проверка пользователя
@@ -52,11 +54,14 @@ public class JwtTokenFilter extends OncePerRequestFilter {
                 UsernamePasswordAuthenticationToken auth =
                         new UsernamePasswordAuthenticationToken(
                                 userDetails,
-                        token,
+                                token,
                                 userDetails.getAuthorities()
                         );
                 auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(auth);
+                log.debug("Authenticated user '{}' for {}", username, request.getRequestURI());
+            } else {
+                log.warn("JWT validation failed for user '{}' on {}", username, request.getRequestURI());
             }
         }
 

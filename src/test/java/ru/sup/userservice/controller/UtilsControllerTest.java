@@ -107,9 +107,9 @@ class UtilsControllerTest {
     }
 
     @Test
-    void searchUsers_unauthenticated_returns403() throws Exception {
+    void searchUsers_unauthenticated_returns401() throws Exception {
         mockMvc.perform(get("/api/v1/user/ali"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     // ======================== GET USER BY ID ========================
@@ -199,13 +199,13 @@ class UtilsControllerTest {
     }
 
     @Test
-    void verifyEmail_unauthenticated_returns403() throws Exception {
+    void verifyEmail_unauthenticated_returns401() throws Exception {
         VerificationEmailRequest request = new VerificationEmailRequest();
         request.setCode("ABC123");
 
         mockMvc.perform(post("/api/v1/user/verifyEmail").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 }

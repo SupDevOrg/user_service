@@ -177,9 +177,9 @@ class UserControllerTest {
     }
 
     @Test
-    void delete_unauthenticated_returns403() throws Exception {
+    void delete_unauthenticated_returns401() throws Exception {
         mockMvc.perform(delete("/api/v1/user/delete").with(csrf()))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -301,7 +301,7 @@ class UserControllerTest {
 
     @Test
     @WithMockUser(username = "alice")
-    void update_userNotFound_returns403() throws Exception {
+    void update_userNotFound_returns401() throws Exception {
         UpdateRequest request = new UpdateRequest();
         request.setPassword("newPassword");
 
@@ -310,18 +310,18 @@ class UserControllerTest {
         mockMvc.perform(put("/api/v1/user/update").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void update_unauthenticated_returns403() throws Exception {
+    void update_unauthenticated_returns401() throws Exception {
         UpdateRequest request = new UpdateRequest();
         request.setUsername("alice_new");
 
         mockMvc.perform(put("/api/v1/user/update").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
         @Test
@@ -359,14 +359,14 @@ class UserControllerTest {
         }
 
         @Test
-        void createAvatarUploadUrl_unauthenticated_returns403() throws Exception {
+        void createAvatarUploadUrl_unauthenticated_returns401() throws Exception {
         AvatarUploadUrlRequest request = new AvatarUploadUrlRequest();
         request.setContentType("image/jpeg");
 
         mockMvc.perform(post("/api/v1/user/avatar/upload-url").with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isForbidden());
+            .andExpect(status().isUnauthorized());
         }
 
     @Test
@@ -418,7 +418,7 @@ class UserControllerTest {
 
     @Test
     @WithMockUser(username = "alice")
-    void createAvatarUploadUrl_userNotFound_returns403() throws Exception {
+    void createAvatarUploadUrl_userNotFound_returns401() throws Exception {
         AvatarUploadUrlRequest request = new AvatarUploadUrlRequest();
         request.setContentType("image/jpeg");
         request.setFileName("avatar.jpg");
@@ -428,21 +428,21 @@ class UserControllerTest {
         mockMvc.perform(post("/api/v1/user/avatar/upload-url").with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isForbidden());
+            .andExpect(status().isUnauthorized());
     }
 
     @Test
     @WithMockUser(username = "alice")
-    void createAvatarAccessUrl_userNotFound_returns403() throws Exception {
+    void createAvatarAccessUrl_userNotFound_returns401() throws Exception {
         when(userService.findByUsername("alice")).thenReturn(Optional.empty());
 
         mockMvc.perform(get("/api/v1/user/avatar/access-url").with(csrf()))
-            .andExpect(status().isForbidden());
+            .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void createAvatarAccessUrl_unauthenticated_returns403() throws Exception {
+    void createAvatarAccessUrl_unauthenticated_returns401() throws Exception {
         mockMvc.perform(get("/api/v1/user/avatar/access-url").with(csrf()))
-            .andExpect(status().isForbidden());
+            .andExpect(status().isUnauthorized());
     }
 }

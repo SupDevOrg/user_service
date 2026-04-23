@@ -71,9 +71,9 @@ class FriendshipControllerTest {
     }
 
     @Test
-    void sendFriendRequest_unauthenticated_returns403() throws Exception {
+    void sendFriendRequest_unauthenticated_returns401() throws Exception {
         mockMvc.perform(post("/api/v1/user/1/friends/2").with(csrf()))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     // ======================== ACCEPT FRIEND REQUEST ========================
