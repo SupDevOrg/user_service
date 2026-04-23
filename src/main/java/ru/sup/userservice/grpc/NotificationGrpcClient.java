@@ -21,12 +21,16 @@ public class NotificationGrpcClient {
 
     public void sendNotification(long recipientId, long senderId, NotificationType type, Map<String, String> payload) {
         try {
+            long createdAtUnixMs = Instant.now().toEpochMilli();
+            log.info("Sending gRPC notification: type={}, recipientId={}, senderId={}, createdAtUnixMs={}",
+                    type, recipientId, senderId, createdAtUnixMs);
+
             var request = SendNotificationRequest.newBuilder()
                     .setRecipientId(recipientId)
                     .setSenderId(senderId)
                     .setType(type)
                     .putAllPayload(payload)
-                    .setCreatedAtUnixMs(Instant.now().toEpochMilli())
+                    .setCreatedAtUnixMs(createdAtUnixMs)
                     .build();
 
             var response = stub.withDeadlineAfter(properties.getDeadlineMs(), TimeUnit.MILLISECONDS)
