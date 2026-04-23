@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import ru.sup.userservice.config.NotificationServiceProperties;
 
+import java.time.Instant;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -25,6 +26,7 @@ public class NotificationGrpcClient {
                     .setSenderId(senderId)
                     .setType(type)
                     .putAllPayload(payload)
+                    .setCreatedAtUnixMs(Instant.now().toEpochMilli())
                     .build();
 
             var response = stub.withDeadlineAfter(properties.getDeadlineMs(), TimeUnit.MILLISECONDS)
