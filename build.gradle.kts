@@ -10,7 +10,7 @@ group = "ru.sup"
 version = "0.0.1-SNAPSHOT"
 description = "User service"
 
-val grpcVersion = "1.68.1"
+val grpcVersion = "1.75.0"
 val protobufVersion = "4.29.1"
 
 java {
@@ -117,7 +117,7 @@ protobuf {
         create("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:$grpcVersion" }
     }
     generateProtoTasks {
-        all().forEach { task -> task.plugins { create("grpc") } }
+        all().forEach { task: com.google.protobuf.gradle.GenerateProtoTask -> task.plugins { create("grpc") } }
     }
 }
 
