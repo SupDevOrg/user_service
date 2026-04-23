@@ -250,23 +250,23 @@ class FriendshipControllerV2Test {
 
     @Test
     @WithMockUser(username = "alice")
-    void currentUserNotFound_returns403() throws Exception {
+    void currentUserNotFound_returns401() throws Exception {
         when(userService.findByUsername("alice")).thenReturn(Optional.empty());
 
         mockMvc.perform(get("/api/v2/user/friends/count"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
         @Test
         @WithMockUser(username = "anonymousUser")
-        void anonymousUsername_returns403() throws Exception {
+        void anonymousUsername_returns401() throws Exception {
                 mockMvc.perform(get("/api/v2/user/friends/count"))
-                                .andExpect(status().isForbidden());
+                                .andExpect(status().isUnauthorized());
         }
 
     @Test
-    void unauthenticated_returns403() throws Exception {
+    void unauthenticated_returns401() throws Exception {
         mockMvc.perform(get("/api/v2/user/friends/count"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 }
