@@ -9,7 +9,6 @@ import ru.sup.userservice.data.FriendRequestAction;
 import ru.sup.userservice.dto.event.FriendRequestEvent;
 
 import java.time.LocalDateTime;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -108,19 +107,20 @@ public class FriendshipEventProducer {
     // === Внутренний метод отправки ===
 
     private void sendEvent(String routingKey, Object event) {
+        String payload;
         try {
-            String payload = objectMapper.writeValueAsString(event);
-            kafkaTemplate.send(TOPIC, routingKey, payload)
-                    .get(5, TimeUnit.SECONDS); // Синхронно — ждём подтверждения
-
-            log.info("Kafka event sent: key={}, topic={}, payload={}", routingKey, TOPIC, payload);
+            payload = objectMapper.writeValueAsString(event);
         } catch (JsonProcessingException e) {
             log.error("Failed to serialize friendship event: {}", event, e);
             throw new RuntimeException("Serialization failed", e);
-        } catch (Exception e) {
-            log.error("Failed to send Kafka friendship event: {}", event, e);
-            // Не прерываем основной поток — событие не критично
-            // throw new RuntimeException("Kafka send failed", e);
         }
+        kafkaTemplate.send(TOPIC, routingKey, payload)
+                .whenComplete((result, ex) -> {
+                    if (ex != null) {
+                        log.error("Failed to send Kafka friendship event: key={}, topic={}", routingKey, TOPIC, ex);
+                    } else {
+                        log.debug("Kafka friendship event sent: key={}, topic={}", routingKey, TOPIC);
+                    }
+                });
     }
 }

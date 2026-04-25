@@ -8,7 +8,6 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import ru.sup.userservice.dto.EmailCode;
 
-import java.util.concurrent.TimeUnit;
 
 @Service
 public class EmailEventProducer {
@@ -31,18 +30,20 @@ public class EmailEventProducer {
     }
 
     private void sendEvent(Object event) {
+        String payload;
         try {
-            String payload = objectMapper.writeValueAsString(event);
-            kafkaTemplate.send(TOPIC, "email.send_code", payload)
-                    .get(5, TimeUnit.SECONDS); // Синхронно — ждём подтверждения
-
-            log.info("Kafka event sent: key={}, topic={}, payload={}", "email.send_code", TOPIC, payload);
+            payload = objectMapper.writeValueAsString(event);
         } catch (JsonProcessingException e) {
             log.error("Failed to serialize event: {}", event, e);
             throw new RuntimeException("Serialization failed", e);
-        } catch (Exception e) {
-            log.error("Failed to send Kafka event: {}", event, e);
-            throw new RuntimeException("Kafka send failed", e);
         }
+        kafkaTemplate.send(TOPIC, "email.send_code", payload)
+                .whenComplete((result, ex) -> {
+                    if (ex != null) {
+                        log.error("Failed to send Kafka email event: topic={}", TOPIC, ex);
+                    } else {
+                        log.debug("Kafka email event sent: topic={}", TOPIC);
+                    }
+                });
     }
 }

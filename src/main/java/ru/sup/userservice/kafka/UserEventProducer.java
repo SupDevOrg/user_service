@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import ru.sup.userservice.dto.event.UserCreatedEvent;
 import ru.sup.userservice.dto.event.UserUpdatedEvent;
 
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -36,18 +35,20 @@ public class UserEventProducer {
     }
 
     private void sendEvent(String routingKey, Object event) {
+        String payload;
         try {
-            String payload = objectMapper.writeValueAsString(event);
-            kafkaTemplate.send(TOPIC, routingKey, payload)
-                    .get(5, TimeUnit.SECONDS); // Синхронно — ждём подтверждения
-
-            log.info("Kafka event sent: key={}, topic={}, payload={}", routingKey, TOPIC, payload);
+            payload = objectMapper.writeValueAsString(event);
         } catch (JsonProcessingException e) {
             log.error("Failed to serialize event: {}", event, e);
             throw new RuntimeException("Serialization failed", e);
-        } catch (Exception e) {
-            log.error("Failed to send Kafka event: {}", event, e);
-            throw new RuntimeException("Kafka send failed", e);
         }
+        kafkaTemplate.send(TOPIC, routingKey, payload)
+                .whenComplete((result, ex) -> {
+                    if (ex != null) {
+                        log.error("Failed to send Kafka event: key={}, topic={}", routingKey, TOPIC, ex);
+                    } else {
+                        log.debug("Kafka event sent: key={}, topic={}", routingKey, TOPIC);
+                    }
+                });
     }
 }
